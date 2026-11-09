@@ -1,0 +1,2252 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI THERMAL LAB - Simulator Pendinginan Chip AI (Versi Super Mudah)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- KaTeX for Simple Formulas Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&family=Permanent+Marker&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        street: {
+                            bg: '#08070c',
+                            card: '#121019',
+                            panel: '#1a1724',
+                            border: '#2e293a',
+                            pink: '#ff007f',
+                            cyan: '#00f0ff',
+                            lime: '#39ff14',
+                            yellow: '#ffe600',
+                            purple: '#b026ff',
+                            orange: '#ff5500'
+                        }
+                    },
+                    fontFamily: {
+                        marker: ['"Permanent Marker"', 'cursive'],
+                        bangers: ['"Bangers"', 'cursive'],
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Dark Mode Body Background */
+        html.dark body {
+            background-color: #08070c;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(255, 0, 127, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(0, 240, 255, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(57, 255, 20, 0.05) 0%, transparent 60%),
+                repeating-linear-gradient(45deg, #08070c 0, #08070c 12px, #0e0c16 12px, #0e0c16 24px);
+            color: #f3f4f6;
+        }
+
+        /* Light Mode Body Background */
+        html:not(.dark) body {
+            background-color: #f8fafc;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(255, 0, 127, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(0, 240, 255, 0.06) 0%, transparent 40%),
+                repeating-linear-gradient(45deg, #f8fafc 0, #f8fafc 12px, #f1f5f9 12px, #f1f5f9 24px);
+            color: #0f172a;
+        }
+
+        /* Hard Pop-Art / Cyber-Street Offset Shadows */
+        .shadow-street-pink { box-shadow: 4px 4px 0px #ff007f; }
+        .shadow-street-cyan { box-shadow: 4px 4px 0px #00f0ff; }
+        .shadow-street-lime { box-shadow: 4px 4px 0px #39ff14; }
+        .shadow-street-yellow { box-shadow: 4px 4px 0px #ffe600; }
+        .shadow-street-dark { box-shadow: 5px 5px 0px #000000; }
+
+        .text-glow-pink { text-shadow: 0 0 12px rgba(255, 0, 127, 0.8); }
+        .text-glow-cyan { text-shadow: 0 0 12px rgba(0, 240, 255, 0.8); }
+        .text-glow-lime { text-shadow: 0 0 12px rgba(57, 255, 20, 0.8); }
+        .text-stroke-black { -webkit-text-stroke: 1.5px #000; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #08070c; }
+        ::-webkit-scrollbar-thumb { background: #ff007f; border-radius: 0px; border: 2px solid #000; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+
+        .sticker-rotate-left { transform: rotate(-1.5deg); }
+        .sticker-rotate-right { transform: rotate(1.5deg); }
+        .sticker-rotate-left:hover, .sticker-rotate-right:hover { transform: rotate(0deg) scale(1.02); }
+
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing; }
+
+        /* Custom Checkbox Design */
+        .custom-checkbox {
+            appearance: none;
+            width: 1.15rem;
+            height: 1.15rem;
+            border: 2px solid #000;
+            background-color: #121019;
+            cursor: pointer;
+            position: relative;
+        }
+        html:not(.dark) .custom-checkbox {
+            background-color: #ffffff;
+        }
+        .custom-checkbox:checked {
+            background-color: #39ff14;
+        }
+        .custom-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            color: #000;
+            font-weight: 900;
+            font-size: 0.8rem;
+            top: -3px;
+            left: 2px;
+        }
+
+        /* Side-Aligned Part Labels Styling */
+        .side-part-label {
+            position: absolute;
+            pointer-events: auto;
+            z-index: 30;
+            transition: opacity 0.25s ease, transform 0.2s ease, top 0.15s ease;
+            white-space: nowrap;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Light mode card overrides */
+        html:not(.dark) .bg-street-card {
+            background-color: #ffffff !important;
+            border-color: #000000 !important;
+            color: #0f172a !important;
+        }
+        html:not(.dark) .bg-street-panel {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+        }
+        html:not(.dark) .border-street-border {
+            border-color: #cbd5e1 !important;
+        }
+        html:not(.dark) .bg-black {
+            background-color: #1e293b !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-street-pink selection:text-white">
+
+    <!-- Header Navigation -->
+    <header class="border-b-4 border-black bg-street-card/95 dark:bg-street-card/95 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            
+            <!-- Logo & Brand Tag -->
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-street-pink border-2 border-black shadow-street-cyan -rotate-3 hover:rotate-0 transition-transform cursor-pointer">
+                    <i data-lucide="droplet" class="w-7 h-7 text-black stroke-[3]"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="text-2xl sm:text-3xl font-bangers tracking-wider text-street-pink text-glow-pink text-stroke-black transform -rotate-1">
+                            AI THERMAL <span class="text-street-cyan text-glow-cyan">LAB</span>
+                        </h1>
+                        <span class="hidden sm:inline-block px-2 py-0.5 bg-street-yellow text-black font-marker text-xs border-2 border-black -rotate-2 shadow-street-dark">RUMUS SUPER MUDAH</span>
+                    </div>
+                    <p class="text-[11px] font-marker text-street-lime tracking-wide">SIMULATOR PENDINGINAN CHIP AI LIQUID - HITUNGAN 2 LANGKAH GAMPANG!</p>
+                </div>
+            </div>
+
+            <!-- Nav Buttons & Theme Switcher -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- Theme Toggle Button -->
+                <button id="btn-theme-toggle" onclick="toggleTheme()" title="Beralih Mode Terang / Gelap" class="p-2.5 bg-street-yellow text-black border-2 border-black shadow-street-dark hover:bg-white transition flex items-center justify-center">
+                    <i data-lucide="sun" id="theme-icon" class="w-5 h-5 stroke-[2.5]"></i>
+                </button>
+
+                <!-- Navigation Tabs -->
+                <nav class="flex space-x-1 sm:space-x-2 text-xs sm:text-sm font-bangers tracking-wider">
+                    <button id="tab-sim-btn" onclick="switchTab('sim')" class="px-3 sm:px-4 py-2 bg-street-pink text-black border-2 border-black shadow-street-cyan sticker-rotate-left font-bold transition flex items-center space-x-1.5">
+                        <i data-lucide="box" class="w-4 h-4 stroke-[3]"></i>
+                        <span class="text-sm sm:text-base">SIMULASI</span>
+                    </button>
+                    <button id="tab-edu-btn" onclick="switchTab('edu')" class="px-3 sm:px-4 py-2 bg-street-card text-street-cyan border-2 border-street-border hover:border-street-cyan sticker-rotate-right font-bold transition flex items-center space-x-1.5">
+                        <i data-lucide="book-open" class="w-4 h-4"></i>
+                        <span class="text-sm sm:text-base hidden sm:inline">RUMUS & CARA HITUNG</span>
+                        <span class="text-sm sm:text-base sm:hidden">RUMUS</span>
+                    </button>
+                    <button id="tab-mission-btn" onclick="switchTab('mission')" class="px-3 sm:px-4 py-2 bg-street-card text-street-yellow border-2 border-street-border hover:border-street-yellow sticker-rotate-left font-bold transition flex items-center space-x-1.5">
+                        <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                        <span class="text-sm sm:text-base hidden sm:inline">TANTANGAN MISI</span>
+                        <span class="text-sm sm:text-base sm:hidden">MISI</span>
+                    </button>
+                    <button id="tab-quiz-btn" onclick="switchTab('quiz')" class="px-3 sm:px-4 py-2 bg-street-card text-street-lime border-2 border-street-border hover:border-street-lime sticker-rotate-right font-bold transition flex items-center space-x-1.5">
+                        <i data-lucide="help-circle" class="w-4 h-4"></i>
+                        <span class="text-sm sm:text-base hidden sm:inline">KUIS EVALUASI</span>
+                        <span class="text-sm sm:text-base sm:hidden">KUIS</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
+
+        <!-- ================= TAB 1: SIMULASI ================= -->
+        <section id="sec-sim" class="space-y-6">
+
+            <!-- Realtime Metrics Header Cards (Easy Physics Metrics) -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                
+                <div class="bg-street-card border-2 border-black p-4 shadow-street-lime relative overflow-hidden sticker-rotate-left">
+                    <p class="text-xs font-marker text-street-lime uppercase tracking-widest">SUHU CHIP AI (HASIL)</p>
+                    <div class="flex items-center justify-between mt-1.5">
+                        <h3 id="metric-temp" class="text-2xl sm:text-3xl font-mono font-extrabold text-street-lime text-glow-lime">55.0 °C</h3>
+                        <i data-lucide="thermometer" id="icon-temp" class="w-7 h-7 text-street-lime stroke-[2.5]"></i>
+                    </div>
+                </div>
+
+                <div class="bg-street-card border-2 border-black p-4 shadow-street-cyan relative overflow-hidden sticker-rotate-right">
+                    <p class="text-xs font-marker text-street-cyan uppercase tracking-widest">FAKTOR PENDINGIN (F)</p>
+                    <div class="flex items-center justify-between mt-1.5">
+                        <h3 id="metric-factor" class="text-2xl sm:text-3xl font-mono font-extrabold text-street-cyan text-glow-cyan">0.05</h3>
+                        <i data-lucide="shield-check" class="w-7 h-7 text-street-cyan stroke-[2.5]"></i>
+                    </div>
+                </div>
+
+                <div class="bg-street-card border-2 border-black p-4 shadow-street-yellow relative overflow-hidden sticker-rotate-left">
+                    <p class="text-xs font-marker text-street-yellow uppercase tracking-widest">TAMBAHAN PANAS CHIP</p>
+                    <div class="flex items-center justify-between mt-1.5">
+                        <h3 id="metric-heat-added" class="text-2xl sm:text-3xl font-mono font-extrabold text-street-yellow">+25.0 °C</h3>
+                        <i data-lucide="flame" class="w-7 h-7 text-street-yellow stroke-[2.5]"></i>
+                    </div>
+                </div>
+
+                <div class="bg-street-card border-2 border-black p-4 shadow-street-pink relative overflow-hidden sticker-rotate-right">
+                    <p class="text-xs font-marker text-street-pink uppercase tracking-widest">STATUS CHIP AI</p>
+                    <div class="flex items-center justify-between mt-1.5">
+                        <h3 id="metric-status" class="text-xl sm:text-2xl font-bangers tracking-wider text-street-lime">OPTIMAL & ADEM</h3>
+                        <i data-lucide="check-circle-2" id="icon-status" class="w-7 h-7 text-street-lime stroke-[2.5]"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Visualizer & Control Panels Workspace -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Canvas Viewport Panel (2 Cols) -->
+                <div class="lg:col-span-2 bg-street-card border-3 border-black shadow-street-dark p-4 sm:p-5 flex flex-col justify-between space-y-4 relative">
+                    
+                    <div class="flex flex-wrap items-center justify-between border-b-2 border-street-border pb-3 gap-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 bg-street-pink animate-ping"></span>
+                            <h2 class="font-bangers text-xl sm:text-2xl tracking-wider flex items-center space-x-2">
+                                <span class="text-street-pink" id="title-mode-indicator">VISUAL 3D CHIP GPU</span> 
+                                <span class="text-gray-400">&</span>
+                                <span class="text-street-cyan">PENDINGIN LIQUID</span>
+                            </h2>
+                        </div>
+
+                        <!-- Mode Switcher: 2D Schematic vs 3D Orbit -->
+                        <div class="flex items-center bg-black p-1 border-2 border-street-border space-x-1">
+                            <button id="btn-mode-3d" onclick="setViewMode('3d')" class="px-3 py-1 bg-street-cyan text-black font-bangers text-xs sm:text-sm border border-black shadow-street-dark transition font-bold">
+                                MODE 3D ORBIT
+                            </button>
+                            <button id="btn-mode-2d" onclick="setViewMode('2d')" class="px-3 py-1 bg-street-card text-street-pink font-bangers text-xs sm:text-sm hover:text-white transition font-bold">
+                                MODE 2D SKEMATIK
+                            </button>
+                        </div>
+
+                        <!-- 3D Camera Quick Angles & Label Toggle Controls -->
+                        <div id="controls-3d-header" class="flex flex-wrap items-center gap-1.5 font-bangers text-xs">
+                            <button onclick="setCameraView('orbit')" class="px-2 py-1 bg-black border border-street-cyan text-street-cyan hover:bg-street-cyan hover:text-black transition">
+                                ORBIT 360°
+                            </button>
+                            <button onclick="setCameraView('bottom')" class="px-2 py-1 bg-black border border-street-yellow text-street-yellow hover:bg-street-yellow hover:text-black transition">
+                                BAWAH (BGA)
+                            </button>
+                            <button onclick="setCameraView('top')" class="px-2 py-1 bg-black border border-street-lime text-street-lime hover:bg-street-lime hover:text-black transition">
+                                ATAS (DIE)
+                            </button>
+                            <button onclick="triggerExplodedPreset()" class="px-2 py-1 bg-street-pink text-black border border-black hover:bg-white transition font-extrabold">
+                                EKSPLOSI INSTAN
+                            </button>
+                            <button id="btn-toggle-labels" onclick="toggleLabels()" class="px-2 py-1 bg-street-lime text-black border border-black hover:bg-white transition font-extrabold">
+                                LABEL: ON
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Container (3D WebGL vs 2D Canvas) -->
+                    <div id="canvas-wrapper" class="relative w-full aspect-video bg-black border-4 border-black shadow-inner overflow-hidden flex items-center justify-center">
+                        
+                        <!-- 3D WebGL Container -->
+                        <div id="canvas3d-container" class="w-full h-full block cursor-grab relative">
+                            <!-- SVG Overlay for Leader Lines & Arrowheads -->
+                            <svg id="svg-leader-lines" class="absolute inset-0 pointer-events-none w-full h-full z-20">
+                                <defs>
+                                    <marker id="arrow-pink" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 1 L 10 5 L 0 9 z" fill="#ff007f" />
+                                    </marker>
+                                    <marker id="arrow-cyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 1 L 10 5 L 0 9 z" fill="#00f0ff" />
+                                    </marker>
+                                    <marker id="arrow-lime" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 1 L 10 5 L 0 9 z" fill="#39ff14" />
+                                    </marker>
+                                    <marker id="arrow-yellow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 1 L 10 5 L 0 9 z" fill="#ffe600" />
+                                    </marker>
+                                    <marker id="arrow-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                        <path d="M 0 1 L 10 5 L 0 9 z" fill="#a1a1aa" />
+                                    </marker>
+                                </defs>
+                            </svg>
+
+                            <!-- Side-Aligned Part Labels Containers -->
+                            <div id="labels-left-container" class="absolute top-0 bottom-0 left-3 w-40 sm:w-48 pointer-events-none z-30"></div>
+                            <div id="labels-right-container" class="absolute top-0 bottom-0 right-3 w-40 sm:w-48 pointer-events-none z-30"></div>
+                        </div>
+
+                        <!-- 2D Canvas Container (Schematic Mode) -->
+                        <div id="canvas2d-container" class="w-full h-full hidden relative">
+                            <canvas id="schematic2dCanvas" class="w-full h-full block bg-black"></canvas>
+                        </div>
+
+                        <!-- Helper Overlay Header -->
+                        <div id="hint-3d-banner" class="absolute top-3 left-3 bg-black/85 border border-street-cyan px-3 py-1.5 text-[11px] font-mono text-street-cyan pointer-events-none z-10 rounded shadow-md">
+                            <i data-lucide="move" class="w-3.5 h-3.5 inline mr-1 text-street-yellow"></i>
+                            <span id="hint-text"><strong>DRAG:</strong> Rotasi 360° | <strong>RIGHT-DRAG:</strong> Pan | <strong>SCROLL:</strong> Zoom</span>
+                        </div>
+
+                        <!-- Camera Zoom Overlay Controls -->
+                        <div id="overlay-zoom-controls" class="absolute top-3 right-3 z-10 flex space-x-2">
+                            <button onclick="zoom3D(0.85)" title="Zoom In" class="p-2 bg-black/80 border-2 border-street-cyan text-street-cyan hover:bg-street-cyan hover:text-black transition">
+                                <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="zoom3D(1.15)" title="Zoom Out" class="p-2 bg-black/80 border-2 border-street-cyan text-street-cyan hover:bg-street-cyan hover:text-black transition">
+                                <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="setCameraView('orbit')" title="Reset Kamera" class="p-2 bg-black/80 border-2 border-street-yellow text-street-yellow hover:bg-street-yellow hover:text-black transition font-bangers text-xs flex items-center space-x-1">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                <span>RESET</span>
+                            </button>
+                        </div>
+
+                        <!-- Thermal Throttling Alert Overlay -->
+                        <div id="throttle-alert" class="hidden absolute inset-0 bg-street-pink/80 backdrop-blur-xs border-4 border-black flex flex-col items-center justify-center p-6 text-center animate-pulse z-40">
+                            <i data-lucide="alert-triangle" class="w-16 h-16 text-yellow-300 animate-bounce mb-2 stroke-[3]"></i>
+                            <h3 class="text-yellow-300 font-bangers text-3xl sm:text-4xl tracking-wider text-stroke-black">BAHAYA: OVERHEAT / THROTTLING!</h3>
+                            <p class="text-xs sm:text-sm font-marker text-white max-w-md mt-2 drop-shadow-md">Suhu Chip AI melebihi 85°C! Chip kepanasan karena pendingin tidak sanggup menahan beban watt!</p>
+                        </div>
+                    </div>
+
+                    <!-- Exploded View Slider Controls Bar (3D Mode) -->
+                    <div id="panel-exploded-slider" class="bg-street-panel border-2 border-street-border p-3.5 space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <label class="font-bangers text-street-yellow text-base tracking-wider flex items-center space-x-2">
+                                <i data-lucide="layers" class="w-5 h-5 text-street-yellow"></i>
+                                <span>EXPLODED VIEW (GESER UNTUK MELIHAT ANATOMI LAYER)</span>
+                            </label>
+                            <span id="lbl-explode" class="font-mono text-street-yellow font-extrabold bg-black px-2 py-0.5 border border-street-yellow">0 %</span>
+                        </div>
+                        <input type="range" id="slide-explode" min="0" max="100" value="0" oninput="updateExplodeView()" class="w-full accent-street-yellow bg-black h-3 cursor-pointer border border-black">
+                        <div class="flex justify-between text-[10px] font-mono text-gray-400">
+                            <span>0% (Chip Rapat)</span>
+                            <span>50% (Garis Label Muncul)</span>
+                            <span>100% (Terpisah Sempurna)</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Control Panels: Layer Visibility & Thermal Parameters (1 Col) -->
+                <div class="space-y-6">
+                    
+                    <!-- Panel 1: Layer Visibility Checkboxes -->
+                    <div id="panel-layer-toggles" class="bg-street-card border-3 border-black shadow-street-cyan p-4 space-y-3">
+                        <h3 class="font-bangers text-xl text-street-cyan tracking-wider border-b-2 border-street-border pb-2 flex items-center justify-between">
+                            <span class="flex items-center space-x-2">
+                                <i data-lucide="eye" class="w-5 h-5 text-street-cyan"></i>
+                                <span>TOGGLE TAMPILAN BAGIAN CHIP</span>
+                            </span>
+                            <button onclick="toggleAllLayers(true)" class="text-[10px] font-mono text-street-lime underline">SEMUA ON</button>
+                        </h3>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs font-sans">
+                            <label class="flex items-center space-x-2 p-1.5 bg-black border border-street-border hover:border-street-cyan cursor-pointer">
+                                <input type="checkbox" id="chk-cooling" checked onchange="updateLayers()" class="custom-checkbox">
+                                <span class="font-mono text-white text-[11px]">Sistem Pendingin</span>
+                            </label>
+
+                            <label class="flex items-center space-x-2 p-1.5 bg-black border border-street-border hover:border-street-cyan cursor-pointer">
+                                <input type="checkbox" id="chk-tim" checked onchange="updateLayers()" class="custom-checkbox">
+                                <span class="font-mono text-gray-300 text-[11px]">Thermal Paste</span>
+                            </label>
+
+                            <label class="flex items-center space-x-2 p-1.5 bg-black border border-street-border hover:border-street-cyan cursor-pointer">
+                                <input type="checkbox" id="chk-ihs" checked onchange="updateLayers()" class="custom-checkbox">
+                                <span class="font-mono text-gray-300 text-[11px]">IHS Metal Lid</span>
+                            </label>
+
+                            <label class="flex items-center space-x-2 p-1.5 bg-black border border-street-border hover:border-street-cyan cursor-pointer">
+                                <input type="checkbox" id="chk-die" checked onchange="updateLayers()" class="custom-checkbox">
+                                <span class="font-mono text-street-cyan text-[11px]">Die Core & HBM</span>
+                            </label>
+
+                            <label class="flex items-center space-x-2 p-1.5 bg-black border border-street-border hover:border-street-cyan cursor-pointer">
+                                <input type="checkbox" id="chk-smd" checked onchange="updateLayers()" class="custom-checkbox">
+                                <span class="font-mono text-street-pink text-[11px]">Kapasitor SMD</span>
+                            </label>
+
+                            <label class="flex items-center space-x-2 p-1.5 bg-black border border-street-border hover:border-street-cyan cursor-pointer">
+                                <input type="checkbox" id="chk-pcb" checked onchange="updateLayers()" class="custom-checkbox">
+                                <span class="font-mono text-street-lime text-[11px]">Substrate PCB</span>
+                            </label>
+
+                            <label class="flex items-center space-x-2 p-1.5 bg-black border border-street-border hover:border-street-cyan cursor-pointer">
+                                <input type="checkbox" id="chk-bga" checked onchange="updateLayers()" class="custom-checkbox">
+                                <span class="font-mono text-street-yellow text-[11px]">Pin Solder BGA</span>
+                            </label>
+
+                            <label class="flex items-center space-x-2 p-1.5 bg-black border border-street-border hover:border-street-cyan cursor-pointer">
+                                <input type="checkbox" id="chk-motherboard" checked onchange="updateLayers()" class="custom-checkbox">
+                                <span class="font-mono text-gray-400 text-[11px]">Motherboard Base</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Panel 2: Thermal Controls (Easy Sliders & Inputs) -->
+                    <div class="bg-street-card border-3 border-black shadow-street-pink p-4 space-y-4">
+                        <h3 class="font-bangers text-xl text-street-pink tracking-wider border-b-2 border-street-border pb-2 flex items-center space-x-2">
+                            <i data-lucide="sliders" class="w-5 h-5 text-street-pink"></i>
+                            <span>KONTROL SIMULATOR PENDINGIN</span>
+                        </h3>
+
+                        <!-- Mode Selector: Tech buttons -->
+                        <div class="space-y-1.5">
+                            <label class="text-[11px] font-marker text-street-yellow uppercase">1. PILIH TEKNOLOGI PENDINGIN</label>
+                            <div class="grid grid-cols-3 gap-1.5 font-bangers text-xs">
+                                <button onclick="setCoolingTech('air')" id="btn-air" class="p-2 bg-street-panel text-street-pink border border-street-border hover:border-street-pink text-center flex flex-col items-center">
+                                    <span>UDARA</span>
+                                    <span class="text-[10px] text-gray-400 font-mono">(Faktor 0.15)</span>
+                                </button>
+                                <button onclick="setCoolingTech('d2c')" id="btn-d2c" class="p-2 bg-street-cyan text-black border-2 border-black shadow-street-dark text-center font-bold flex flex-col items-center">
+                                    <span>LIQUID (DLC)</span>
+                                    <span class="text-[10px] text-black font-mono">(Faktor 0.05)</span>
+                                </button>
+                                <button onclick="setCoolingTech('immersion')" id="btn-immersion" class="p-2 bg-street-panel text-street-lime border border-street-border hover:border-street-lime text-center flex flex-col items-center">
+                                    <span>RENDAM</span>
+                                    <span class="text-[10px] text-gray-400 font-mono">(Faktor 0.02)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Workload TDP Slider -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center text-xs">
+                                <label class="font-marker text-white">2. DAYA / PANAS CHIP (WATT)</label>
+                                <span id="lbl-workload" class="font-mono text-street-cyan font-bold bg-black px-1.5 py-0.5 border border-street-cyan">500 W</span>
+                            </div>
+                            <input type="range" id="slide-workload" min="300" max="1000" step="50" value="500" oninput="updateThermalControls()" class="w-full accent-street-cyan bg-black h-2.5 cursor-pointer border border-black">
+                        </div>
+
+                        <!-- Ambient / Water Temp Slider -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center text-xs">
+                                <label class="font-marker text-white">3. SUHU AIR / RUANG (°C)</label>
+                                <span id="lbl-ambient" class="font-mono text-street-yellow font-bold bg-black px-1.5 py-0.5 border border-street-yellow">30 °C</span>
+                            </div>
+                            <input type="range" id="slide-ambient" min="18" max="35" step="1" value="30" oninput="updateThermalControls()" class="w-full accent-street-yellow bg-black h-2.5 cursor-pointer border border-black">
+                        </div>
+
+                        <!-- Flow Speed Slider -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center text-xs">
+                                <label class="font-marker text-white">4. KECEPATAN POMPA / KIPAS (%)</label>
+                                <span id="lbl-flow" class="font-mono text-street-lime font-bold bg-black px-1.5 py-0.5 border border-street-lime">60 %</span>
+                            </div>
+                            <input type="range" id="slide-flow" min="20" max="100" step="5" value="60" oninput="updateThermalControls()" class="w-full accent-street-lime bg-black h-2.5 cursor-pointer border border-black">
+                        </div>
+                    </div>
+
+                    <!-- Panel 3: Live Easy Math Step-by-Step Card -->
+                    <div class="bg-street-card border-3 border-black shadow-street-yellow p-4 space-y-3">
+                        <h3 class="font-bangers text-xl text-street-yellow tracking-wider border-b-2 border-street-border pb-2 flex items-center space-x-2">
+                            <i data-lucide="calculator" class="w-5 h-5 text-street-yellow"></i>
+                            <span>HITUNGAN SANGAT MUDAH (LIVE)</span>
+                        </h3>
+                        <div class="space-y-2 text-xs font-mono">
+                            <div class="p-2.5 bg-black border border-street-border rounded space-y-1">
+                                <span class="text-street-pink font-bold block text-[11px]">Langkah 1: Hitung Tambahan Panas</span>
+                                <div class="text-center py-1 text-xs text-street-yellow font-bold" id="live-step-1">
+                                    500W × 0.05 = 25.0 °C
+                                </div>
+                            </div>
+                            <div class="p-2.5 bg-black border border-street-border rounded space-y-1">
+                                <span class="text-street-lime font-bold block text-[11px]">Langkah 2: Tambahkan ke Suhu Air</span>
+                                <div class="text-center py-1 text-xs text-street-cyan font-bold" id="live-step-2">
+                                    30 °C + 25.0 °C = 55.0 °C
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Realtime Thermal Temperature History Graph -->
+            <div class="bg-street-card border-3 border-black shadow-street-lime p-4 space-y-2">
+                <div class="flex items-center justify-between border-b-2 border-street-border pb-2">
+                    <h3 class="font-bangers text-xl text-street-lime tracking-wider flex items-center space-x-2">
+                        <i data-lucide="trending-up" class="w-5 h-5 text-street-lime"></i>
+                        <span>GRAFIK SUHU CHIP AI REALTIME VS BATAS OVERHEAT (85°C)</span>
+                    </h3>
+                    <span class="text-xs font-mono text-gray-400">SAMPLING: 1 DETIK</span>
+                </div>
+                <div class="w-full h-32 bg-black border-2 border-black relative overflow-hidden">
+                    <canvas id="chartCanvas" class="w-full h-full block"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 2: MATERI EDUKASI SUPER MUDAH ================= -->
+        <section id="sec-edu" class="hidden space-y-8">
+            
+            <div class="bg-street-card border-3 border-black p-6 sm:p-8 shadow-street-pink relative overflow-hidden">
+                <span class="px-3 py-1 bg-street-yellow text-black text-xs font-marker border-2 border-black shadow-street-dark -rotate-2 inline-block mb-3">MODUL PENDINGINAN CHIP AI VERSI SUPER MUDAH</span>
+                <h2 class="text-3xl sm:text-4xl font-bangers tracking-wider text-stroke-black">
+                    CARA HITUNG SUHU CHIP AI DENGAN RUMUS GAMPANG
+                </h2>
+                <p class="text-sm font-sans text-gray-300 mt-2 leading-relaxed max-w-4xl">
+                    Tidak perlu rumus fisika rumit! Menghitung suhu chip AI saat menggunakan pendingin cairan (*liquid cooling*) sangatlah mudah. Cukup ingat **1 Rumus Utama** dengan **2 Langkah Sederhana** di bawah ini:
+                </p>
+            </div>
+
+            <!-- RUMUS UTAMA MATH DISPLAY -->
+            <div class="bg-street-card border-3 border-black p-6 shadow-street-yellow space-y-6">
+                <div class="border-b-2 border-street-border pb-3 flex items-center justify-between">
+                    <h3 class="text-2xl sm:text-3xl font-bangers text-street-yellow tracking-wider flex items-center space-x-2">
+                        <i data-lucide="binary" class="w-7 h-7 text-street-yellow"></i>
+                        <span>RUMUS UTAMA PENDINGINAN CHIP AI</span>
+                    </h3>
+                    <span class="px-3 py-1 bg-black text-street-yellow font-mono text-xs border border-street-yellow">FORMULA SIMPLE</span>
+                </div>
+
+                <div class="p-4 bg-black border-2 border-street-pink shadow-street-pink text-center rounded">
+                    <div id="katex-easy-formula" class="text-xl sm:text-2xl text-street-cyan font-bold py-2 overflow-x-auto"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Step 1 Explanation -->
+                    <div class="bg-black p-5 border-2 border-street-pink shadow-street-pink space-y-3 sticker-rotate-left">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 bg-street-pink text-black font-marker text-xs border border-black">LANGKAH 1</span>
+                            <i data-lucide="flame" class="w-6 h-6 text-street-pink"></i>
+                        </div>
+                        <h4 class="font-bangers text-2xl text-street-pink tracking-wide">CARI PANAS TAMBAHAN CHIP</h4>
+                        <div class="p-3 bg-street-card border border-street-border text-center rounded font-mono text-sm font-bold text-street-yellow">
+                            Panas Tambahan = Watt Chip × Faktor Pendingin
+                        </div>
+                        <p class="text-xs text-gray-300 leading-relaxed font-sans">
+                            Kalikan berapa watt listrik yang dipakai oleh chip AI dengan <strong>Faktor Daya Serap</strong> dari pendingin yang kamu gunakan.
+                        </p>
+                    </div>
+
+                    <!-- Step 2 Explanation -->
+                    <div class="bg-black p-5 border-2 border-street-lime shadow-street-lime space-y-3 sticker-rotate-right">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2.5 py-0.5 bg-street-lime text-black font-marker text-xs border border-black">LANGKAH 2</span>
+                            <i data-lucide="thermometer" class="w-6 h-6 text-street-lime"></i>
+                        </div>
+                        <h4 class="font-bangers text-2xl text-street-lime tracking-wide">TAMBAHKAN KE SUHU AIR</h4>
+                        <div class="p-3 bg-street-card border border-street-border text-center rounded font-mono text-sm font-bold text-street-cyan">
+                            Suhu Akhir Chip = Suhu Air + Panas Tambahan
+                        </div>
+                        <p class="text-xs text-gray-300 leading-relaxed font-sans">
+                            Jumlahkan suhu awal air/ruang pendingin dengan panas tambahan tadi. Hasilnya adalah suhu akhir chip AI kamu!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PERBANDINGAN FAKTOR PENDINGIN TABLE -->
+            <div class="bg-street-card border-3 border-black shadow-street-cyan p-6 space-y-4">
+                <h3 class="text-2xl font-bangers text-street-cyan tracking-wider flex items-center space-x-2">
+                    <i data-lucide="layers" class="w-6 h-6 text-street-cyan"></i>
+                    <span>TABEL FAKTOR PENDINGIN: KIPAS UDARA VS LIQUID LIQUID VS RENDAM</span>
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs font-sans">
+                    <!-- Air Cooling -->
+                    <div class="bg-black p-5 border-2 border-street-pink space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bangers text-xl text-street-pink">1. UDARA (KIPAS ANGIN)</span>
+                            <span class="px-2 py-0.5 bg-street-pink text-black font-mono font-bold text-xs">Faktor: 0.15</span>
+                        </div>
+                        <p class="text-gray-300 leading-relaxed">
+                            Menggunakan angin biasa. Karena udara sulit menyerap panas, pengalinya sangat besar (<strong>0.15</strong>).
+                        </p>
+                        <div class="p-2 bg-street-card border border-street-border font-mono text-[11px] text-street-pink">
+                            Contoh 500W: 30°C + (500 × 0.15) = <strong>105°C (PANAS BANGET!)</strong>
+                        </div>
+                    </div>
+
+                    <!-- Liquid Cooling -->
+                    <div class="bg-black p-5 border-2 border-street-cyan space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bangers text-xl text-street-cyan">2. LIQUID (WATERBLOCK)</span>
+                            <span class="px-2 py-0.5 bg-street-cyan text-black font-mono font-bold text-xs">Faktor: 0.05</span>
+                        </div>
+                        <p class="text-gray-300 leading-relaxed">
+                            Cairan dialirkan lewat blok tembaga di atas chip. Air menyerap panas jauh lebih cepat daripada udara (<strong>0.05</strong>).
+                        </p>
+                        <div class="p-2 bg-street-card border border-street-border font-mono text-[11px] text-street-cyan">
+                            Contoh 500W: 30°C + (500 × 0.05) = <strong>55°C (ADEM & AMAN)</strong>
+                        </div>
+                    </div>
+
+                    <!-- Immersion Cooling -->
+                    <div class="bg-black p-5 border-2 border-street-lime space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bangers text-xl text-street-lime">3. RENDAM (IMMERSION)</span>
+                            <span class="px-2 py-0.5 bg-street-lime text-black font-mono font-bold text-xs">Faktor: 0.02</span>
+                        </div>
+                        <p class="text-gray-300 leading-relaxed">
+                            Seluruh GPU dicelupkan ke tangki cairan khusus. Daya serap panas paling dahsyat dan maksimal (<strong>0.02</strong>).
+                        </p>
+                        <div class="p-2 bg-street-card border border-street-border font-mono text-[11px] text-street-lime">
+                            Contoh 500W: 30°C + (500 × 0.02) = <strong>40°C (DINGIN MAKSIMAL)</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 3: TANTANGAN MISI ================= -->
+        <section id="sec-mission" class="hidden space-y-6">
+            
+            <div class="bg-street-card border-3 border-black p-6 shadow-street-yellow">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b-2 border-street-border pb-4 mb-6 gap-3">
+                    <div>
+                        <h2 class="text-3xl font-bangers text-street-yellow tracking-wider flex items-center space-x-2">
+                            <i data-lucide="gamepad-2" class="w-7 h-7 text-street-yellow"></i>
+                            <span>TANTANGAN MISI: THERMAL ENGINEER MASTER</span>
+                        </h2>
+                        <p class="text-xs font-marker text-gray-300 mt-1">Uji keahlian Anda mengelola suhu chip AI menggunakan rumus gampang!</p>
+                    </div>
+                    <span id="mission-total-stars" class="px-4 py-1.5 bg-black border-2 border-street-yellow text-sm font-bangers text-street-yellow flex items-center space-x-1.5 shadow-street-dark">
+                        <i data-lucide="star" class="w-5 h-5 fill-street-yellow"></i>
+                        <span id="star-count-text" class="text-base tracking-wider">0 / 3 BINTANG</span>
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Mission 1 -->
+                    <div class="bg-black p-5 border-2 border-black shadow-street-pink sticker-rotate-left flex flex-col justify-between space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="px-2.5 py-0.5 bg-street-pink text-black font-marker text-xs border border-black">MISI 1</span>
+                                <i data-lucide="zap" class="w-6 h-6 text-street-pink"></i>
+                            </div>
+                            <h3 class="font-bangers text-2xl text-white tracking-wide">LLM TRAINING OVERCLOCK</h3>
+                            <p class="text-xs text-gray-300 leading-relaxed font-sans">
+                                Daya GPU dinaikkan ke <strong>1000 Watt</strong>. Gunakan <strong>Liquid / Rendam</strong> agar suhu chip di bawah <strong>80°C</strong> selama 10 detik!
+                            </p>
+                        </div>
+                        <div class="space-y-3 pt-3 border-t border-street-border">
+                            <div class="flex justify-between text-xs font-mono">
+                                <span>Progress Timer:</span>
+                                <span id="m1-timer" class="text-street-cyan font-bold">0s / 10s</span>
+                            </div>
+                            <button onclick="startMission(1)" id="m1-btn" class="w-full py-2.5 bg-street-pink text-black font-bangers text-lg tracking-wider border-2 border-black shadow-street-dark hover:bg-white transition">
+                                MULAI MISI 1
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mission 2 -->
+                    <div class="bg-black p-5 border-2 border-black shadow-street-lime sticker-rotate-right flex flex-col justify-between space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="px-2.5 py-0.5 bg-street-lime text-black font-marker text-xs border border-black">MISI 2</span>
+                                <i data-lucide="droplet" class="w-6 h-6 text-street-lime"></i>
+                            </div>
+                            <h3 class="font-bangers text-2xl text-white tracking-wide">SUPER DINGIN DENGAN RENDAM</h3>
+                            <p class="text-xs text-gray-300 leading-relaxed font-sans">
+                                Atur pendingin ke mode <strong>RENDAM (Immersion)</strong> pada beban <strong>600 Watt</strong>, capai suhu chip di bawah <strong>45°C</strong>!
+                            </p>
+                        </div>
+                        <div class="space-y-3 pt-3 border-t border-street-border">
+                            <div class="flex justify-between text-xs font-mono">
+                                <span>Progress Timer:</span>
+                                <span id="m2-timer" class="text-street-lime font-bold">0s / 10s</span>
+                            </div>
+                            <button onclick="startMission(2)" id="m2-btn" class="w-full py-2.5 bg-street-lime text-black font-bangers text-lg tracking-wider border-2 border-black shadow-street-dark hover:bg-white transition">
+                                MULAI MISI 2
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mission 3 -->
+                    <div class="bg-black p-5 border-2 border-black shadow-street-yellow sticker-rotate-left flex flex-col justify-between space-y-4">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="px-2.5 py-0.5 bg-street-yellow text-black font-marker text-xs border border-black">MISI 3</span>
+                                <i data-lucide="sun" class="w-6 h-6 text-street-yellow"></i>
+                            </div>
+                            <h3 class="font-bangers text-2xl text-white tracking-wide">GELOMBANG PANAS 35°C</h3>
+                            <p class="text-xs text-gray-300 leading-relaxed font-sans">
+                                Suhu air naik ke <strong>35°C</strong> dengan daya 800W. Atur kecepatan pompa/kipas agar chip tetap di bawah <strong>82°C</strong>!
+                            </p>
+                        </div>
+                        <div class="space-y-3 pt-3 border-t border-street-border">
+                            <div class="flex justify-between text-xs font-mono">
+                                <span>Progress Timer:</span>
+                                <span id="m3-timer" class="text-street-yellow font-bold">0s / 10s</span>
+                            </div>
+                            <button onclick="startMission(3)" id="m3-btn" class="w-full py-2.5 bg-street-yellow text-black font-bangers text-lg tracking-wider border-2 border-black shadow-street-dark hover:bg-white transition">
+                                MULAI MISI 3
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Mission Banner -->
+                <div id="active-mission-box" class="hidden mt-6 p-4 bg-black border-3 border-street-cyan shadow-street-cyan flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <span class="w-4 h-4 rounded-full bg-street-cyan animate-ping"></span>
+                        <div>
+                            <h4 id="active-mission-title" class="font-bangers text-2xl text-street-cyan tracking-wider">MISI AKTIF...</h4>
+                            <p id="active-mission-desc" class="text-xs font-marker text-gray-300">Gunakan tab Simulasi untuk mengatur parameter!</p>
+                        </div>
+                    </div>
+                    <button onclick="cancelMission()" class="px-4 py-2 bg-street-pink text-black font-bangers text-base tracking-wider border-2 border-black hover:bg-white transition">
+                        BATALKAN MISI
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 4: KUIS EVALUASI ================= -->
+        <section id="sec-quiz" class="hidden space-y-6">
+            
+            <div class="bg-street-card border-3 border-black p-6 shadow-street-lime max-w-3xl mx-auto space-y-6">
+                <div class="flex items-center justify-between border-b-2 border-street-border pb-4">
+                    <div>
+                        <h2 class="text-2xl sm:text-3xl font-bangers text-street-lime tracking-wider flex items-center space-x-2">
+                            <i data-lucide="help-circle" class="w-7 h-7 text-street-lime"></i>
+                            <span>KUIS EVALUASI PENDINGINAN CHIP AI</span>
+                        </h2>
+                        <p class="text-xs font-marker text-gray-300 mt-1">Uji pemahaman Anda tentang rumus simpel pendinginan cairan chip AI.</p>
+                    </div>
+                    <span id="quiz-score-badge" class="px-4 py-1.5 bg-black border-2 border-street-lime text-street-lime font-bangers text-lg">SKOR: 0/6</span>
+                </div>
+
+                <div id="quiz-list" class="space-y-6">
+                    <div class="p-4 bg-black border-2 border-street-border space-y-3">
+                        <p class="text-sm font-bold text-white font-sans">1. Apakah rumus paling mudah untuk menghitung suhu chip AI?</p>
+                        <div class="space-y-2 text-xs font-sans">
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q1" value="a" class="mt-0.5 accent-street-lime">
+                                <span>a) Suhu Chip = Suhu Air + (Watt Chip × Faktor Pendingin).</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q1" value="b" class="mt-0.5 accent-street-lime">
+                                <span>b) Suhu Chip = Watt Chip ÷ Suhu Air.</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q1" value="c" class="mt-0.5 accent-street-lime">
+                                <span>c) Suhu Chip = Suhu Ruang × 100.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-black border-2 border-street-border space-y-3">
+                        <p class="text-sm font-bold text-white font-sans">2. Berapakah nilai Faktor Pendingin standar untuk pendingin Cairan Waterblock (Liquid DLC)?</p>
+                        <div class="space-y-2 text-xs font-sans">
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q2" value="a" class="mt-0.5 accent-street-lime">
+                                <span>a) 0.05.</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q2" value="b" class="mt-0.5 accent-street-lime">
+                                <span>b) 0.15.</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q2" value="c" class="mt-0.5 accent-street-lime">
+                                <span>c) 1.50.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-black border-2 border-street-border space-y-3">
+                        <p class="text-sm font-bold text-white font-sans">3. Chip AI 500 Watt didinginkan Kipas Udara (Faktor 0.15) pada suhu ruang 30°C. Berapakah suhunya?</p>
+                        <div class="space-y-2 text-xs font-sans">
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q3" value="a" class="mt-0.5 accent-street-lime">
+                                <span>a) 105°C (30 + 500 × 0.15) -> Mengalami Overheat / Throttling!</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q3" value="b" class="mt-0.5 accent-street-lime">
+                                <span>b) 55°C.</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q3" value="c" class="mt-0.5 accent-street-lime">
+                                <span>c) 40°C.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-black border-2 border-street-border space-y-3">
+                        <p class="text-sm font-bold text-white font-sans">4. Jika Chip AI 500 Watt yang sama diganti ke pendingin Liquid (Faktor 0.05) pada air 30°C, berapa suhunya?</p>
+                        <div class="space-y-2 text-xs font-sans">
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q4" value="a" class="mt-0.5 accent-street-lime">
+                                <span>a) 55°C (30 + 500 × 0.05) -> Dingin & Aman!</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q4" value="b" class="mt-0.5 accent-street-lime">
+                                <span>b) 105°C.</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q4" value="c" class="mt-0.5 accent-street-lime">
+                                <span>c) 85°C.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-black border-2 border-street-border space-y-3">
+                        <p class="text-sm font-bold text-white font-sans">5. Mengapa teknologi Liquid / Rendam jauh lebih dingin daripada Kipas Angin biasa?</p>
+                        <div class="space-y-2 text-xs font-sans">
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q5" value="a" class="mt-0.5 accent-street-lime">
+                                <span>a) Karena cairan memiliki daya serap panas jauh lebih tinggi, sehingga angka faktor pengalinya sangat kecil (0.05 / 0.02).</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q5" value="b" class="mt-0.5 accent-street-lime">
+                                <span>b) Karena cairan membuat chip AI berhenti bekerja.</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q5" value="c" class="mt-0.5 accent-street-lime">
+                                <span>c) Karena kipas angin tidak mengeluarkan udara.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-black border-2 border-street-cyan space-y-3">
+                        <span class="px-2 py-0.5 bg-street-cyan text-black font-marker text-xs border border-black inline-block">HITUNGAN HITUNGAN GAMPANG</span>
+                        <p class="text-sm font-bold text-white font-sans">6. Berapakah TAMBAHAN PANAS dari Chip AI 800 Watt jika menggunakan pendingin Rendam (Immersion, Faktor 0.02)?</p>
+                        <div class="space-y-2 text-xs font-sans">
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q6" value="a" class="mt-0.5 accent-street-cyan">
+                                <span>a) +16°C (diperoleh dari 800 × 0.02).</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q6" value="b" class="mt-0.5 accent-street-cyan">
+                                <span>b) +40°C.</span>
+                            </label>
+                            <label class="flex items-start space-x-3 p-2.5 bg-street-card hover:bg-gray-800 cursor-pointer border border-street-border">
+                                <input type="radio" name="q6" value="c" class="mt-0.5 accent-street-cyan">
+                                <span>c) +80°C.</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button onclick="submitQuiz()" class="w-full py-3.5 bg-street-lime text-black font-bangers text-xl tracking-wider border-2 border-black shadow-street-dark hover:bg-white transition">
+                        KIRIM JAWABAN & EVALUASI
+                    </button>
+                </div>
+
+                <div id="quiz-result-box" class="hidden p-6 bg-black border-3 border-street-lime text-center space-y-4">
+                    <h3 id="quiz-result-title" class="text-2xl font-bangers tracking-wider">HASIL EVALUASI KUIS</h3>
+                    <p id="quiz-result-desc" class="text-xs font-marker text-gray-300 max-w-md mx-auto leading-relaxed"></p>
+                    <button onclick="resetQuiz()" class="px-6 py-2.5 bg-street-card text-white font-bangers text-lg border-2 border-white hover:bg-street-pink hover:text-black transition">
+                        ULANGI KUIS
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t-4 border-black py-4 text-center text-xs font-marker text-gray-400 bg-street-card/80">
+        <p>© 2026 AI Thermal Lab - Simulator Pendinginan Chip AI (Versi Super Mudah)</p>
+    </footer>
+
+    <script>
+        /* Lucide Icons Initializer */
+        lucide.createIcons();
+
+        /* --- Global State --- */
+        const state = {
+            theme: 'dark',        // 'dark' or 'light'
+            viewMode: '3d',       // '3d' or '2d'
+            coolingTech: 'd2c',   // 'air', 'd2c', 'immersion'
+            workloadTDP: 500,      // Watts per GPU (300 - 1000)
+            ambientTemp: 30,       // °C (18 - 35)
+            flowSpeed: 60,         // % (20 - 100)
+            explodeLevel: 0.0,     // 0.0 to 1.0 (Exploded View Level)
+            showLabels: true,      // Show dynamic part labels
+            
+            // Layer Visibility
+            layers: {
+                cooling: true,
+                tim: true,
+                ihs: true,
+                die: true,
+                smd: true,
+                pcb: true,
+                bga: true,
+                motherboard: true
+            },
+
+            // Easy Thermal Physics Values
+            baseFactor: 0.05,      // Air: 0.15, Liquid: 0.05, Immersion: 0.02
+            effectiveFactor: 0.05,
+            heatAdded: 25.0,
+            avgTemp: 55.0,
+            isThrottling: false,
+
+            // Active Mission
+            activeMission: null,
+            missionTimer: 0,
+            completedMissions: { 1: false, 2: false, 3: false }
+        };
+
+        const tempHistory = Array(35).fill(55);
+
+        /* --- Three.js Variables --- */
+        let scene, camera, renderer, controls;
+        let motherboardGroup, bgaGroup, pcbGroup, smdGroup, dieGroup, timGroup, ihsGroup, coolingGroup;
+        let dieMaterials = [];
+        let chipHeatLights = [];
+
+        // Particles
+        let airParticleSystem, liquidParticleSystem, bubbleParticleSystem;
+        const AIR_PARTICLE_COUNT = 300;
+        const LIQUID_PARTICLE_COUNT = 250;
+        const BUBBLE_COUNT = 180;
+
+        /* --- Dynamic Side Part Labels Data --- */
+        let labelsData = [];
+
+        /* Procedural Canvas Texture Generators */
+        function createPCBTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.fillStyle = '#0a3a1d';
+            ctx.fillRect(0, 0, 512, 512);
+
+            ctx.strokeStyle = '#12602f';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 45; i++) {
+                ctx.beginPath();
+                let x = Math.random() * 512;
+                let y = Math.random() * 512;
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + (Math.random() - 0.5) * 120, y + (Math.random() - 0.5) * 120);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#ffd700';
+            for (let i = 0; i < 180; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random() * 512, Math.random() * 512, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createDieTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#080d1a';
+            ctx.fillRect(0, 0, 512, 512);
+
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.35;
+
+            for (let x = 0; x <= 512; x += 16) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+            }
+            for (let y = 0; y <= 512; y += 16) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+            }
+
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = '#00f0ff';
+            ctx.fillRect(40, 40, 200, 200);
+            ctx.fillRect(270, 40, 200, 200);
+            ctx.fillRect(40, 270, 200, 200);
+            ctx.fillRect(270, 270, 200, 200);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createIHSTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#a1a1aa';
+            ctx.fillRect(0, 0, 512, 512);
+
+            ctx.fillStyle = 'rgba(255,255,255,0.08)';
+            for (let i = 0; i < 6000; i++) {
+                ctx.fillRect(Math.random() * 512, Math.random() * 512, Math.random() * 12, 1);
+            }
+
+            ctx.fillStyle = '#27272a';
+            ctx.font = 'bold 30px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('AI GPU-H100 ULTRA', 256, 230);
+            ctx.font = '18px sans-serif';
+            ctx.fillText('AI THERMAL LAB 3D', 256, 280);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        /* --- Theme Switcher Logic --- */
+        function toggleTheme() {
+            state.theme = state.theme === 'dark' ? 'light' : 'dark';
+            const htmlEl = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+
+            if (state.theme === 'dark') {
+                htmlEl.classList.add('dark');
+                themeIcon.setAttribute('data-lucide', 'sun');
+                if (scene) scene.background = new THREE.Color(0x08070c);
+            } else {
+                htmlEl.classList.remove('dark');
+                themeIcon.setAttribute('data-lucide', 'moon');
+                if (scene) scene.background = new THREE.Color(0xf1f5f9);
+            }
+            lucide.createIcons();
+        }
+
+        /* --- View Mode Switcher Logic (3D vs 2D) --- */
+        function setViewMode(mode) {
+            state.viewMode = mode;
+            const btn3d = document.getElementById('btn-mode-3d');
+            const btn2d = document.getElementById('btn-mode-2d');
+            const c3dContainer = document.getElementById('canvas3d-container');
+            const c2dContainer = document.getElementById('canvas2d-container');
+            const titleInd = document.getElementById('title-mode-indicator');
+            const controls3D = document.getElementById('controls-3d-header');
+            const zoomControls = document.getElementById('overlay-zoom-controls');
+            const panelExploded = document.getElementById('panel-exploded-slider');
+            const panelLayers = document.getElementById('panel-layer-toggles');
+            const hintBanner = document.getElementById('hint-3d-banner');
+            const hintText = document.getElementById('hint-text');
+
+            if (mode === '3d') {
+                btn3d.className = "px-3 py-1 bg-street-cyan text-black font-bangers text-xs sm:text-sm border border-black shadow-street-dark transition font-bold";
+                btn2d.className = "px-3 py-1 bg-street-card text-street-pink font-bangers text-xs sm:text-sm hover:text-white transition font-bold";
+                
+                c3dContainer.classList.remove('hidden');
+                c2dContainer.classList.add('hidden');
+                
+                titleInd.innerText = "VISUAL 3D CHIP GPU";
+                controls3D.classList.remove('hidden');
+                zoomControls.classList.remove('hidden');
+                panelExploded.classList.remove('hidden');
+                panelLayers.classList.remove('hidden');
+                hintText.innerHTML = "<strong>DRAG:</strong> Rotasi 360° | <strong>RIGHT-DRAG:</strong> Pan | <strong>SCROLL:</strong> Zoom";
+                
+                setTimeout(onWindowResize, 30);
+            } else {
+                btn2d.className = "px-3 py-1 bg-street-pink text-black font-bangers text-xs sm:text-sm border border-black shadow-street-dark transition font-bold";
+                btn3d.className = "px-3 py-1 bg-street-card text-street-cyan font-bangers text-xs sm:text-sm hover:text-white transition font-bold";
+                
+                c2dContainer.classList.remove('hidden');
+                c3dContainer.classList.add('hidden');
+                
+                titleInd.innerText = "DIAGRAM 2D SKEMATIK";
+                controls3D.classList.add('hidden');
+                zoomControls.classList.add('hidden');
+                panelExploded.classList.add('hidden');
+                panelLayers.classList.add('hidden');
+                hintText.innerHTML = "<strong>SKEMATIK 2D:</strong> Aliran Kalor & Penampang Paket GPU";
+
+                draw2DSchematic();
+            }
+        }
+
+        /* --- 2D Schematic Canvas Renderer --- */
+        function draw2DSchematic() {
+            const canvas2d = document.getElementById('schematic2dCanvas');
+            if (!canvas2d) return;
+
+            if (canvas2d.parentElement) {
+                canvas2d.width = canvas2d.parentElement.clientWidth;
+                canvas2d.height = canvas2d.parentElement.clientHeight;
+            }
+
+            const ctx = canvas2d.getContext('2d');
+            const w = canvas2d.width;
+            const h = canvas2d.height;
+
+            const isDark = state.theme === 'dark';
+            ctx.fillStyle = isDark ? '#08070c' : '#f8fafc';
+            ctx.fillRect(0, 0, w, h);
+
+            // Draw schematic border
+            ctx.strokeStyle = isDark ? '#2e293a' : '#cbd5e1';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(10, 10, w - 20, h - 20);
+
+            // Center positions
+            const cx = w / 2;
+            const cy = h / 2 + 20;
+
+            // Compute Heat Glow Ratio
+            const ratio = Math.min(Math.max((state.avgTemp - 30) / 60, 0), 1);
+            let glowColor = '#00f0ff';
+            if (ratio > 0.7) glowColor = '#ff007f';
+            else if (ratio > 0.4) glowColor = '#ffe600';
+
+            // 1. Motherboard Base
+            ctx.fillStyle = isDark ? '#110f18' : '#e2e8f0';
+            ctx.fillRect(cx - 220, cy + 90, 440, 25);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(cx - 220, cy + 90, 440, 25);
+
+            ctx.fillStyle = isDark ? '#a1a1aa' : '#334155';
+            ctx.font = '11px "JetBrains Mono", monospace';
+            ctx.fillText("MOTHERBOARD BASE BOARD", cx - 210, cy + 107);
+
+            // 2. BGA Solder Balls
+            ctx.fillStyle = '#ffe600';
+            for (let x = -190; x <= 190; x += 18) {
+                ctx.beginPath();
+                ctx.arc(cx + x, cy + 82, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            // 3. Substrate PCB Hijau
+            ctx.fillStyle = '#0a3a1d';
+            ctx.fillRect(cx - 200, cy + 45, 400, 30);
+            ctx.strokeRect(cx - 200, cy + 45, 400, 30);
+
+            ctx.fillStyle = '#39ff14';
+            ctx.font = 'bold 12px "Permanent Marker", cursive';
+            ctx.fillText("SUBSTRATE PCB (GREEN)", cx - 180, cy + 64);
+
+            // 4. SMD Capacitors
+            ctx.fillStyle = '#d1d5db';
+            ctx.fillRect(cx - 180, cy + 30, 25, 15); ctx.strokeRect(cx - 180, cy + 30, 25, 15);
+            ctx.fillRect(cx + 155, cy + 30, 25, 15); ctx.strokeRect(cx + 155, cy + 30, 25, 15);
+
+            // 5. Silicon Die Core + HBM Stacks
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(cx - 140, cy - 10, 280, 50); // Die base
+            ctx.strokeRect(cx - 140, cy - 10, 280, 50);
+
+            // Silicon Die Glow Center
+            const grad = ctx.createRadialGradient(cx, cy + 15, 5, cx, cy + 15, 70);
+            grad.addColorStop(0, glowColor);
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(cx - 80, cy - 5, 160, 40);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 13px "Bangers", cursive';
+            ctx.textAlign = 'center';
+            ctx.fillText(`SILICON DIE CORE (SUHU: ${Math.round(state.avgTemp)}°C)`, cx, cy + 18);
+
+            // 6. TIM Layer
+            ctx.fillStyle = '#71717a';
+            ctx.fillRect(cx - 130, cy - 22, 260, 10);
+            ctx.strokeRect(cx - 130, cy - 22, 260, 10);
+
+            // 7. IHS Lid Metal
+            ctx.fillStyle = '#a1a1aa';
+            ctx.fillRect(cx - 150, cy - 55, 300, 32);
+            ctx.strokeRect(cx - 150, cy - 55, 300, 32);
+
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 12px "Permanent Marker", cursive';
+            ctx.fillText("INTEGRATED HEAT SPREADER (IHS)", cx, cy - 35);
+
+            // 8. Cooling System Top Block
+            if (state.coolingTech === 'air') {
+                ctx.fillStyle = '#b87333';
+                ctx.fillRect(cx - 140, cy - 70, 280, 14); // Copper Base
+                ctx.strokeRect(cx - 140, cy - 70, 280, 14);
+
+                ctx.fillStyle = '#cbd5e1';
+                for (let fx = -130; fx <= 130; fx += 16) {
+                    ctx.fillRect(cx + fx, cy - 140, 6, 70);
+                    ctx.strokeRect(cx + fx, cy - 140, 6, 70);
+                }
+
+                ctx.fillStyle = '#ff007f';
+                ctx.font = 'bold 13px "Bangers", cursive';
+                ctx.fillText("AIR COOLING (UDARA) - FAKTOR: 0.15", cx, cy - 150);
+            } else if (state.coolingTech === 'd2c') {
+                ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
+                ctx.fillRect(cx - 140, cy - 130, 280, 72);
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(cx - 140, cy - 130, 280, 72);
+
+                ctx.fillStyle = '#ff007f';
+                ctx.fillRect(cx - 90, cy - 165, 30, 35); ctx.strokeRect(cx - 90, cy - 165, 30, 35);
+                ctx.fillRect(cx + 60, cy - 165, 30, 35); ctx.strokeRect(cx + 60, cy - 165, 30, 35);
+
+                ctx.fillStyle = '#00f0ff';
+                ctx.font = 'bold 13px "Bangers", cursive';
+                ctx.fillText("DIRECT-TO-CHIP (LIQUID WATERBLOCK) - FAKTOR: 0.05", cx, cy - 140);
+            } else if (state.coolingTech === 'immersion') {
+                ctx.fillStyle = 'rgba(57, 255, 20, 0.2)';
+                ctx.fillRect(cx - 240, cy - 160, 480, 270);
+                ctx.strokeStyle = '#39ff14';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(cx - 240, cy - 160, 480, 270);
+
+                ctx.fillStyle = '#39ff14';
+                ctx.font = 'bold 14px "Bangers", cursive';
+                ctx.fillText("IMMERSION COOLING (RENDAM LIQUID) - FAKTOR: 0.02", cx, cy - 142);
+            }
+
+            ctx.textAlign = 'left';
+        }
+
+        /* --- Three.js Initialization --- */
+        function initThreeJS() {
+            const container = document.getElementById('canvas3d-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // 1. Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(state.theme === 'dark' ? 0x08070c : 0xf1f5f9);
+            scene.fog = new THREE.FogExp2(state.theme === 'dark' ? 0x08070c : 0xf1f5f9, 0.012);
+
+            // 2. Camera
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(18, 14, 22);
+
+            // 3. Renderer with ACES Filmic Tone Mapping
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.3;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            container.appendChild(renderer.domElement);
+
+            // 4. Orbit Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI - 0.05;
+            controls.minDistance = 4;
+            controls.maxDistance = 65;
+            controls.target.set(0, 3, 0);
+
+            // 5. Lighting Setup
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            dirLight.position.set(16, 28, 16);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 80;
+            dirLight.shadow.bias = -0.0005;
+            scene.add(dirLight);
+
+            // Cyberpunk Rim Lights
+            const rimLightCyan = new THREE.PointLight(0x00f0ff, 2.5, 45);
+            rimLightCyan.position.set(-22, 12, -16);
+            scene.add(rimLightCyan);
+
+            const rimLightPink = new THREE.PointLight(0xff007f, 2.2, 45);
+            rimLightPink.position.set(22, 10, -16);
+            scene.add(rimLightPink);
+
+            // 6. Build Multi-layer Groups
+            motherboardGroup = new THREE.Group();
+            bgaGroup         = new THREE.Group();
+            pcbGroup         = new THREE.Group();
+            smdGroup         = new THREE.Group();
+            dieGroup         = new THREE.Group();
+            timGroup         = new THREE.Group();
+            ihsGroup         = new THREE.Group();
+            coolingGroup     = new THREE.Group();
+
+            scene.add(motherboardGroup);
+            scene.add(bgaGroup);
+            scene.add(pcbGroup);
+            scene.add(smdGroup);
+            scene.add(dieGroup);
+            scene.add(timGroup);
+            scene.add(ihsGroup);
+            scene.add(coolingGroup);
+
+            // Build Components
+            buildMotherboardAndSocket();
+            buildBGASolderBalls();
+            buildSubstratePCB();
+            buildSMDCapacitors();
+            buildSiliconDieAndHBM();
+            buildTIMLayer();
+            buildIHSLid();
+            buildCoolingModules();
+            buildParticleSystems();
+
+            // Setup Floating Side Labels DOM
+            setupPartLabelsDOM();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        /* --- 1. Motherboard & Socket Bracket --- */
+        function buildMotherboardAndSocket() {
+            const boardGeo = new THREE.BoxGeometry(22, 0.4, 15);
+            const boardMat = new THREE.MeshStandardMaterial({ color: 0x110f18, roughness: 0.35, metalness: 0.25 });
+            const board = new THREE.Mesh(boardGeo, boardMat);
+            board.position.y = -0.2;
+            board.receiveShadow = true; board.castShadow = true;
+            motherboardGroup.add(board);
+
+            const socketFrameGeo = new THREE.BoxGeometry(19, 0.15, 13);
+            const socketMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, metalness: 0.9, roughness: 0.2 });
+            const socket = new THREE.Mesh(socketFrameGeo, socketMat);
+            socket.position.y = 0.05;
+            socket.receiveShadow = true; socket.castShadow = true;
+            motherboardGroup.add(socket);
+        }
+
+        /* --- 2. BGA Solder Balls Matrix --- */
+        function buildBGASolderBalls() {
+            const ballRadius = 0.13;
+            const sphereGeo = new THREE.SphereGeometry(ballRadius, 12, 12);
+            const bgaMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.98, roughness: 0.08 });
+
+            const chipOffsets = [
+                { x: -5.5, z: -3.5 }, { x: 5.5,  z: -3.5 },
+                { x: -5.5, z: 3.5 },  { x: 5.5,  z: 3.5 }
+            ];
+
+            chipOffsets.forEach(offset => {
+                for (let bx = -3.5; bx <= 3.5; bx += 0.9) {
+                    for (let bz = -2.5; bz <= 2.5; bz += 0.9) {
+                        const ball = new THREE.Mesh(sphereGeo, bgaMat);
+                        ball.position.set(offset.x + bx, 0.13, offset.z + bz);
+                        ball.castShadow = true;
+                        bgaGroup.add(ball);
+                    }
+                }
+            });
+        }
+
+        /* --- 3. Substrate PCB --- */
+        function buildSubstratePCB() {
+            const pcbTex = createPCBTexture();
+            const pcbGeo = new THREE.BoxGeometry(8, 0.3, 6);
+            const pcbMat = new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.25, metalness: 0.2 });
+
+            const goldCornerGeo = new THREE.BoxGeometry(0.6, 0.05, 0.6);
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.95, roughness: 0.1 });
+
+            const chipOffsets = [
+                { x: -5.5, z: -3.5 }, { x: 5.5,  z: -3.5 },
+                { x: -5.5, z: 3.5 },  { x: 5.5,  z: 3.5 }
+            ];
+
+            chipOffsets.forEach(offset => {
+                const pcb = new THREE.Mesh(pcbGeo, pcbMat);
+                pcb.position.set(offset.x, 0.35, offset.z);
+                pcb.castShadow = true; pcb.receiveShadow = true;
+                pcbGroup.add(pcb);
+
+                [[-3.6, -2.6], [3.6, -2.6], [-3.6, 2.6], [3.6, 2.6]].forEach(c => {
+                    const corner = new THREE.Mesh(goldCornerGeo, goldMat);
+                    corner.position.set(offset.x + c[0], 0.51, offset.z + c[1]);
+                    pcbGroup.add(corner);
+                });
+            });
+        }
+
+        /* --- 4. SMD Capacitors Array --- */
+        function buildSMDCapacitors() {
+            const capGeo = new THREE.BoxGeometry(0.35, 0.2, 0.2);
+            const capMat = new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.85, roughness: 0.15 });
+
+            const chipOffsets = [
+                { x: -5.5, z: -3.5 }, { x: 5.5,  z: -3.5 },
+                { x: -5.5, z: 3.5 },  { x: 5.5,  z: 3.5 }
+            ];
+
+            chipOffsets.forEach(offset => {
+                for (let cx = -3; cx <= 3; cx += 1.0) {
+                    const capTop = new THREE.Mesh(capGeo, capMat);
+                    capTop.position.set(offset.x + cx, 0.55, offset.z - 2.5);
+                    capTop.castShadow = true;
+                    smdGroup.add(capTop);
+
+                    const capBot = new THREE.Mesh(capGeo, capMat);
+                    capBot.position.set(offset.x + cx, 0.55, offset.z + 2.5);
+                    capBot.castShadow = true;
+                    smdGroup.add(capBot);
+                }
+            });
+        }
+
+        /* --- 5. Silicon Die & HBM Memory Stacks --- */
+        function buildSiliconDieAndHBM() {
+            const dieTex = createDieTexture();
+            const dieGeo = new THREE.BoxGeometry(3.6, 0.28, 2.4);
+
+            const hbmGeo = new THREE.BoxGeometry(1.2, 0.25, 1.2);
+            const hbmMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.9, roughness: 0.1 });
+
+            const chipOffsets = [
+                { x: -5.5, z: -3.5 }, { x: 5.5,  z: -3.5 },
+                { x: -5.5, z: 3.5 },  { x: 5.5,  z: 3.5 }
+            ];
+
+            chipOffsets.forEach(offset => {
+                const dieMat = new THREE.MeshStandardMaterial({
+                    map: dieTex,
+                    color: 0x0f172a,
+                    metalness: 0.95,
+                    roughness: 0.1,
+                    emissive: 0x00f0ff,
+                    emissiveIntensity: 0.6
+                });
+                dieMaterials.push(dieMat);
+
+                const die = new THREE.Mesh(dieGeo, dieMat);
+                die.position.set(offset.x, 0.72, offset.z);
+                die.castShadow = true;
+                dieGroup.add(die);
+
+                [[-2.5, 0], [2.5, 0], [-2.5, -1.2], [2.5, -1.2], [-2.5, 1.2], [2.5, 1.2]].forEach(hPos => {
+                    const hbm = new THREE.Mesh(hbmGeo, hbmMat);
+                    hbm.position.set(offset.x + hPos[0], 0.7, offset.z + hPos[1]);
+                    hbm.castShadow = true;
+                    dieGroup.add(hbm);
+                });
+
+                const heatLight = new THREE.PointLight(0x00f0ff, 1.8, 8);
+                heatLight.position.set(offset.x, 1.1, offset.z);
+                chipHeatLights.push(heatLight);
+                dieGroup.add(heatLight);
+            });
+        }
+
+        /* --- 6. Thermal Interface Material (TIM Paste Layer) --- */
+        function buildTIMLayer() {
+            const timGeo = new THREE.BoxGeometry(5.2, 0.08, 3.8);
+            const timMat = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.7, metalness: 0.3 });
+
+            const chipOffsets = [
+                { x: -5.5, z: -3.5 }, { x: 5.5,  z: -3.5 },
+                { x: -5.5, z: 3.5 },  { x: 5.5,  z: 3.5 }
+            ];
+
+            chipOffsets.forEach(offset => {
+                const tim = new THREE.Mesh(timGeo, timMat);
+                tim.position.set(offset.x, 0.9, offset.z);
+                tim.castShadow = true;
+                timGroup.add(tim);
+            });
+        }
+
+        /* --- 7. IHS Lid --- */
+        function buildIHSLid() {
+            const ihsTex = createIHSTexture();
+            const ihsGeo = new THREE.BoxGeometry(5.8, 0.28, 4.2);
+            const ihsMat = new THREE.MeshStandardMaterial({
+                map: ihsTex,
+                color: 0xd4d4d8,
+                metalness: 0.88,
+                roughness: 0.18
+            });
+
+            const chipOffsets = [
+                { x: -5.5, z: -3.5 }, { x: 5.5,  z: -3.5 },
+                { x: -5.5, z: 3.5 },  { x: 5.5,  z: 3.5 }
+            ];
+
+            chipOffsets.forEach(offset => {
+                const ihs = new THREE.Mesh(ihsGeo, ihsMat);
+                ihs.position.set(offset.x, 1.08, offset.z);
+                ihs.castShadow = true; ihs.receiveShadow = true;
+                ihsGroup.add(ihs);
+            });
+        }
+
+        /* --- 8. Cooling System Modules --- */
+        function buildCoolingModules() {
+            const airGroup = new THREE.Group();
+            airGroup.name = "cooling_air";
+            airGroup.visible = false;
+
+            const copperBaseGeo = new THREE.BoxGeometry(5.2, 0.2, 3.8);
+            const copperMat = new THREE.MeshStandardMaterial({ color: 0xb87333, metalness: 0.95, roughness: 0.2 });
+
+            const finGeo = new THREE.BoxGeometry(0.08, 1.8, 3.6);
+            const aluminumMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8, roughness: 0.25 });
+
+            const chipOffsets = [
+                { x: -5.5, z: -3.5 }, { x: 5.5,  z: -3.5 },
+                { x: -5.5, z: 3.5 },  { x: 5.5,  z: 3.5 }
+            ];
+
+            chipOffsets.forEach(offset => {
+                const base = new THREE.Mesh(copperBaseGeo, copperMat);
+                base.position.set(offset.x, 1.3, offset.z);
+                base.castShadow = true;
+                airGroup.add(base);
+
+                for (let fx = -2.2; fx <= 2.2; fx += 0.3) {
+                    const fin = new THREE.Mesh(finGeo, aluminumMat);
+                    fin.position.set(offset.x + fx, 2.3, offset.z);
+                    fin.castShadow = true;
+                    airGroup.add(fin);
+                }
+            });
+
+            coolingGroup.add(airGroup);
+
+            const d2cGroup = new THREE.Group();
+            d2cGroup.name = "cooling_d2c";
+            d2cGroup.visible = true;
+
+            const blockGeo = new THREE.BoxGeometry(5.4, 0.8, 3.8);
+            const acrylicMat = new THREE.MeshPhysicalMaterial({
+                color: 0x00f0ff, transmission: 0.85, opacity: 0.9, transparent: true, roughness: 0.1, ior: 1.45, thickness: 0.8
+            });
+
+            const pipeGeo = new THREE.CylinderGeometry(0.25, 0.25, 1.2, 16);
+            const pipeMat = new THREE.MeshStandardMaterial({ color: 0xff007f, metalness: 0.9, roughness: 0.1 });
+
+            chipOffsets.forEach(offset => {
+                const block = new THREE.Mesh(blockGeo, acrylicMat);
+                block.position.set(offset.x, 1.6, offset.z);
+                block.castShadow = true;
+                d2cGroup.add(block);
+
+                const pipe1 = new THREE.Mesh(pipeGeo, pipeMat);
+                pipe1.position.set(offset.x - 1.5, 2.4, offset.z);
+                d2cGroup.add(pipe1);
+
+                const pipe2 = new THREE.Mesh(pipeGeo, pipeMat);
+                pipe2.position.set(offset.x + 1.5, 2.4, offset.z);
+                d2cGroup.add(pipe2);
+            });
+
+            coolingGroup.add(d2cGroup);
+
+            const immersionGroup = new THREE.Group();
+            immersionGroup.name = "cooling_immersion";
+            immersionGroup.visible = false;
+
+            const tankGeo = new THREE.BoxGeometry(21, 6.0, 14);
+            const tankMat = new THREE.MeshPhysicalMaterial({
+                color: 0x39ff14, transmission: 0.9, opacity: 0.25, transparent: true, roughness: 0.05, ior: 1.33
+            });
+
+            const tank = new THREE.Mesh(tankGeo, tankMat);
+            tank.position.set(0, 3.0, 0);
+            immersionGroup.add(tank);
+
+            coolingGroup.add(immersionGroup);
+        }
+
+        /* --- Particle Systems --- */
+        function buildParticleSystems() {
+            const airGeo = new THREE.BufferGeometry();
+            const airPos = new Float32Array(AIR_PARTICLE_COUNT * 3);
+            for (let i = 0; i < AIR_PARTICLE_COUNT * 3; i += 3) {
+                airPos[i] = (Math.random() - 0.5) * 22;
+                airPos[i + 1] = 2.0 + Math.random() * 1.5;
+                airPos[i + 2] = (Math.random() - 0.5) * 14;
+            }
+            airGeo.setAttribute('position', new THREE.BufferAttribute(airPos, 3));
+            airParticleSystem = new THREE.Points(airGeo, new THREE.PointsMaterial({ color: 0xffe600, size: 0.16, transparent: true, opacity: 0.85 }));
+            airParticleSystem.visible = false;
+            scene.add(airParticleSystem);
+
+            const liquidGeo = new THREE.BufferGeometry();
+            const liquidPos = new Float32Array(LIQUID_PARTICLE_COUNT * 3);
+            for (let i = 0; i < LIQUID_PARTICLE_COUNT * 3; i += 3) {
+                liquidPos[i] = (Math.random() - 0.5) * 18;
+                liquidPos[i + 1] = 1.6 + Math.random() * 0.4;
+                liquidPos[i + 2] = (Math.random() - 0.5) * 12;
+            }
+            liquidGeo.setAttribute('position', new THREE.BufferAttribute(liquidPos, 3));
+            liquidParticleSystem = new THREE.Points(liquidGeo, new THREE.PointsMaterial({ color: 0x00f0ff, size: 0.18, transparent: true, opacity: 0.9 }));
+            liquidParticleSystem.visible = true;
+            scene.add(liquidParticleSystem);
+
+            const bubbleGeo = new THREE.BufferGeometry();
+            const bubblePos = new Float32Array(BUBBLE_COUNT * 3);
+            for (let i = 0; i < BUBBLE_COUNT * 3; i += 3) {
+                bubblePos[i] = (Math.random() - 0.5) * 18;
+                bubblePos[i + 1] = 0.5 + Math.random() * 5.0;
+                bubblePos[i + 2] = (Math.random() - 0.5) * 12;
+            }
+            bubbleGeo.setAttribute('position', new THREE.BufferAttribute(bubblePos, 3));
+            bubbleParticleSystem = new THREE.Points(bubbleGeo, new THREE.PointsMaterial({ color: 0x39ff14, size: 0.22, transparent: true, opacity: 0.85 }));
+            bubbleParticleSystem.visible = false;
+            scene.add(bubbleParticleSystem);
+        }
+
+        function updateParticleSystems() {
+            const speed = (state.flowSpeed / 100) * 0.15;
+
+            if (state.coolingTech === 'air' && airParticleSystem) {
+                const pos = airParticleSystem.geometry.attributes.position.array;
+                for (let i = 0; i < pos.length; i += 3) {
+                    pos[i] += speed * 2; if (pos[i] > 11) pos[i] = -11;
+                }
+                airParticleSystem.geometry.attributes.position.needsUpdate = true;
+            } else if (state.coolingTech === 'd2c' && liquidParticleSystem) {
+                const pos = liquidParticleSystem.geometry.attributes.position.array;
+                for (let i = 2; i < pos.length; i += 3) {
+                    pos[i] += speed * 2.5; if (pos[i] > 7) pos[i] = -7;
+                }
+                liquidParticleSystem.geometry.attributes.position.needsUpdate = true;
+            } else if (state.coolingTech === 'immersion' && bubbleParticleSystem) {
+                const pos = bubbleParticleSystem.geometry.attributes.position.array;
+                for (let i = 1; i < pos.length; i += 3) {
+                    pos[i] += speed * 1.8; if (pos[i] > 5.5) pos[i] = 0.5;
+                }
+                bubbleParticleSystem.geometry.attributes.position.needsUpdate = true;
+            }
+        }
+
+        /* --- Dynamic Side-Aligned Part Labels & SVG Leader Lines Setup --- */
+        function setupPartLabelsDOM() {
+            const leftContainer = document.getElementById('labels-left-container');
+            const rightContainer = document.getElementById('labels-right-container');
+            if (!leftContainer || !rightContainer) return;
+            leftContainer.innerHTML = '';
+            rightContainer.innerHTML = '';
+
+            const partsList = [
+                { id: 'lbl-cooling', title: '1. SISTEM PENDINGIN',       color: '#ff007f', arrowId: 'arrow-pink',   side: 'left',  slotIndex: 0, group: coolingGroup,     localOffset: new THREE.Vector3(0, 1.2, 0) },
+                { id: 'lbl-ihs',     title: '3. IHS LID METAL',          color: '#ffe600', arrowId: 'arrow-yellow', side: 'left',  slotIndex: 1, group: ihsGroup,         localOffset: new THREE.Vector3(0, 0.2, 0) },
+                { id: 'lbl-smd',     title: '5. KAPASITOR SMD',          color: '#ff007f', arrowId: 'arrow-pink',   side: 'left',  slotIndex: 2, group: smdGroup,         localOffset: new THREE.Vector3(-3.5, 0.1, 0) },
+                { id: 'lbl-bga',     title: '7. BOLA SOLDER BGA',        color: '#ffe600', arrowId: 'arrow-yellow', side: 'left',  slotIndex: 3, group: bgaGroup,         localOffset: new THREE.Vector3(-3.5, 0.05, 0) },
+
+                { id: 'lbl-tim',     title: '2. PASTE TERMAL (TIM)',     color: '#a1a1aa', arrowId: 'arrow-gray',   side: 'right', slotIndex: 0, group: timGroup,         localOffset: new THREE.Vector3(0, 0.1, 0) },
+                { id: 'lbl-die',     title: '4. DIE SILIKON & HBM',      color: '#00f0ff', arrowId: 'arrow-cyan',   side: 'right', slotIndex: 1, group: dieGroup,         localOffset: new THREE.Vector3(0, 0.2, 0) },
+                { id: 'lbl-pcb',     title: '6. SUBSTRATE PCB HIJAU',    color: '#39ff14', arrowId: 'arrow-lime',   side: 'right', slotIndex: 2, group: pcbGroup,         localOffset: new THREE.Vector3(3.5, 0.1, 0) },
+                { id: 'lbl-mbo',     title: '8. SOCKET MOTHERBOARD',     color: '#a1a1aa', arrowId: 'arrow-gray',   side: 'right', slotIndex: 3, group: motherboardGroup, localOffset: new THREE.Vector3(3.5, -0.1, 0) }
+            ];
+
+            labelsData = partsList.map(item => {
+                const el = document.createElement('div');
+                el.className = "side-part-label flex items-center space-x-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-black/90 border-2 text-[10px] sm:text-[11px] font-mono font-bold shadow-street-dark rounded-none cursor-default opacity-0";
+                el.style.borderColor = item.color;
+                el.style.color = item.color;
+                el.innerHTML = `<span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${item.color}"></span><span class="truncate">${item.title}</span>`;
+                
+                if (item.side === 'left') {
+                    leftContainer.appendChild(el);
+                } else {
+                    rightContainer.appendChild(el);
+                }
+
+                return {
+                    ...item,
+                    el: el
+                };
+            });
+        }
+
+        function updateFloatingLabels() {
+            const svgOverlay = document.getElementById('svg-leader-lines');
+            if (!svgOverlay) return;
+
+            // Completely hide labels & leader lines in 2D mode OR when Exploded View is at 0% OR labels toggled OFF
+            if (state.viewMode === '2d' || !state.showLabels || state.explodeLevel === 0) {
+                labelsData.forEach(item => {
+                    if (item.el) item.el.style.opacity = '0';
+                });
+                const lines = svgOverlay.querySelectorAll('path.leader-line');
+                lines.forEach(l => l.remove());
+                return;
+            }
+
+            const container = document.getElementById('canvas3d-container');
+            if (!container) return;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const containerRect = container.getBoundingClientRect();
+
+            // Clear old SVG lines
+            const existingLines = svgOverlay.querySelectorAll('path.leader-line');
+            existingLines.forEach(l => l.remove());
+
+            // Non-overlapping Slot Layout Calculation
+            const labelBoxHeight = 30;
+            const topPadding = 18;
+            const bottomPadding = 18;
+            const usableHeight = Math.max(100, height - topPadding - bottomPadding - labelBoxHeight);
+            const slotStep = usableHeight / 3;
+
+            labelsData.forEach(item => {
+                if (!item.group || !item.group.visible) {
+                    item.el.style.opacity = '0';
+                    return;
+                }
+
+                const labelTopY = topPadding + (item.slotIndex * slotStep);
+                item.el.style.top = `${labelTopY}px`;
+
+                const worldPos = new THREE.Vector3();
+                item.group.getWorldPosition(worldPos);
+                worldPos.add(item.localOffset);
+
+                const proj = worldPos.clone().project(camera);
+
+                if (proj.z > 1.0) {
+                    item.el.style.opacity = '0';
+                    return;
+                }
+
+                const targetX = (proj.x * 0.5 + 0.5) * width;
+                const targetY = (proj.y * -0.5 + 0.5) * height;
+
+                item.el.style.opacity = '1';
+
+                const labelRect = item.el.getBoundingClientRect();
+                
+                let startX, startY;
+                if (item.side === 'left') {
+                    startX = labelRect.right - containerRect.left;
+                    startY = labelRect.top + labelRect.height / 2 - containerRect.top;
+                } else {
+                    startX = labelRect.left - containerRect.left;
+                    startY = labelRect.top + labelRect.height / 2 - containerRect.top;
+                }
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('class', 'leader-line');
+                
+                const midX = (startX + targetX) / 2;
+                const d = `M ${startX} ${startY} L ${midX} ${startY} L ${targetX} ${targetY}`;
+                
+                path.setAttribute('d', d);
+                path.setAttribute('stroke', item.color);
+                path.setAttribute('stroke-width', '1.75');
+                path.setAttribute('stroke-dasharray', '4 2');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('marker-end', `url(#${item.arrowId})`);
+
+                svgOverlay.appendChild(path);
+            });
+        }
+
+        /* Render LaTeX KaTeX Formulas */
+        function renderMathFormulas() {
+            try {
+                if (window.katex) {
+                    katex.render("\\text{Suhu Chip} = \\text{Suhu Air/Ruang} + (\\text{Watt Chip} \\times \\text{Faktor Pendingin})", document.getElementById('katex-easy-formula'), { displayMode: true, throwOnError: false });
+                }
+            } catch (e) {
+                console.log("KaTeX formatting fallback active.");
+            }
+        }
+
+        function toggleLabels() {
+            state.showLabels = !state.showLabels;
+            const btn = document.getElementById('btn-toggle-labels');
+            btn.innerText = `LABEL: ${state.showLabels ? 'ON' : 'OFF'}`;
+            btn.className = state.showLabels ? 
+                "px-2.5 py-1 bg-street-lime text-black border border-black hover:bg-white transition font-extrabold" :
+                "px-2.5 py-1 bg-street-panel text-gray-400 border border-street-border hover:bg-white hover:text-black transition font-extrabold";
+        }
+
+        function triggerExplodedPreset() {
+            document.getElementById('slide-explode').value = 65;
+            updateExplodeView();
+            setCameraView('side');
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas3d-container');
+            if (container) {
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
+            }
+
+            if (state.viewMode === '2d') {
+                draw2DSchematic();
+            }
+
+            const chart = document.getElementById('chartCanvas');
+            if (chart && chart.parentElement) {
+                chart.width = chart.parentElement.clientWidth;
+                chart.height = chart.parentElement.clientHeight;
+            }
+        }
+
+        /* --- Camera Presets --- */
+        function setCameraView(preset) {
+            if (preset === 'orbit') {
+                camera.position.set(18, 14, 22);
+                controls.target.set(0, 3, 0);
+            } else if (preset === 'bottom') {
+                camera.position.set(0, -22, 0.1);
+                controls.target.set(0, 2, 0);
+            } else if (preset === 'top') {
+                camera.position.set(0, 26, 0.1);
+                controls.target.set(0, 3, 0);
+            } else if (preset === 'side') {
+                camera.position.set(26, 8, 0);
+                controls.target.set(0, 4, 0);
+            }
+            controls.update();
+        }
+
+        function zoom3D(factor) {
+            camera.position.multiplyScalar(factor);
+            controls.update();
+        }
+
+        /* --- Exploded View Offsets --- */
+        function updateExplodeView() {
+            const val = parseInt(document.getElementById('slide-explode').value);
+            state.explodeLevel = val / 100.0;
+            document.getElementById('lbl-explode').innerText = `${val} %`;
+        }
+
+        function applyExplodedViewOffsets() {
+            const exp = state.explodeLevel;
+
+            motherboardGroup.position.y = 0;
+            bgaGroup.position.y         = exp * 2.2;
+            pcbGroup.position.y         = exp * 4.5;
+            smdGroup.position.y         = exp * 6.0;
+            dieGroup.position.y         = exp * 8.0;
+            timGroup.position.y         = exp * 10.0;
+            ihsGroup.position.y         = exp * 12.0;
+            coolingGroup.position.y     = exp * 15.0;
+        }
+
+        function updateLayers() {
+            state.layers.cooling = document.getElementById('chk-cooling').checked;
+            state.layers.tim = document.getElementById('chk-tim').checked;
+            state.layers.ihs = document.getElementById('chk-ihs').checked;
+            state.layers.die = document.getElementById('chk-die').checked;
+            state.layers.smd = document.getElementById('chk-smd').checked;
+            state.layers.pcb = document.getElementById('chk-pcb').checked;
+            state.layers.bga = document.getElementById('chk-bga').checked;
+            state.layers.motherboard = document.getElementById('chk-motherboard').checked;
+
+            coolingGroup.visible = state.layers.cooling;
+            timGroup.visible = state.layers.tim;
+            ihsGroup.visible = state.layers.ihs;
+            dieGroup.visible = state.layers.die;
+            smdGroup.visible = state.layers.smd;
+            pcbGroup.visible = state.layers.pcb;
+            bgaGroup.visible = state.layers.bga;
+            motherboardGroup.visible = state.layers.motherboard;
+        }
+
+        function toggleAllLayers(status) {
+            ['cooling', 'tim', 'ihs', 'die', 'smd', 'pcb', 'bga', 'motherboard'].forEach(l => {
+                state.layers[l] = status;
+                const chk = document.getElementById(`chk-${l}`);
+                if (chk) chk.checked = status;
+            });
+            updateLayers();
+        }
+
+        function setCoolingTech(tech) {
+            state.coolingTech = tech;
+
+            if (tech === 'air') state.baseFactor = 0.15;
+            else if (tech === 'd2c') state.baseFactor = 0.05;
+            else if (tech === 'immersion') state.baseFactor = 0.02;
+
+            ['air', 'd2c', 'immersion'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (t === tech) {
+                    if (t === 'air') btn.className = "p-2 bg-street-pink text-black border-2 border-black shadow-street-dark text-center font-bold flex flex-col items-center";
+                    else if (t === 'd2c') btn.className = "p-2 bg-street-cyan text-black border-2 border-black shadow-street-dark text-center font-bold flex flex-col items-center";
+                    else btn.className = "p-2 bg-street-lime text-black border-2 border-black shadow-street-dark text-center font-bold flex flex-col items-center";
+                } else {
+                    btn.className = "p-2 bg-street-panel text-gray-300 border border-street-border hover:border-white text-center flex flex-col items-center";
+                }
+            });
+
+            const air = coolingGroup.getObjectByName('cooling_air');
+            const d2c = coolingGroup.getObjectByName('cooling_d2c');
+            const immersion = coolingGroup.getObjectByName('cooling_immersion');
+
+            if (air) air.visible = (tech === 'air');
+            if (d2c) d2c.visible = (tech === 'd2c');
+            if (immersion) immersion.visible = (tech === 'immersion');
+
+            airParticleSystem.visible = (tech === 'air');
+            liquidParticleSystem.visible = (tech === 'd2c');
+            bubbleParticleSystem.visible = (tech === 'immersion');
+
+            updateThermalControls();
+
+            if (state.viewMode === '2d') {
+                draw2DSchematic();
+            }
+        }
+
+        function updateThermalControls() {
+            state.workloadTDP = parseInt(document.getElementById('slide-workload').value);
+            state.ambientTemp = parseInt(document.getElementById('slide-ambient').value);
+            state.flowSpeed = parseInt(document.getElementById('slide-flow').value);
+
+            document.getElementById('lbl-workload').innerText = `${state.workloadTDP} W`;
+            document.getElementById('lbl-ambient').innerText = `${state.ambientTemp} °C`;
+            document.getElementById('lbl-flow').innerText = `${state.flowSpeed} %`;
+
+            if (state.viewMode === '2d') {
+                draw2DSchematic();
+            }
+        }
+
+        /* --- Easy Thermal Physics Computation & Dynamic UI Update --- */
+        function calculateThermalPhysics() {
+            // Speed Multiplier: 60% = 1.0 (Nominal), 100% = 0.6 (Coller), 20% = 1.24 (Warmer)
+            const speedMultiplier = 1.4 - (0.8 * (state.flowSpeed / 100.0));
+            state.effectiveFactor = state.baseFactor * speedMultiplier;
+
+            // Step 1: Panas Tambahan = Watt Chip * Faktor Efektif
+            state.heatAdded = state.workloadTDP * state.effectiveFactor;
+
+            // Step 2: Suhu Akhir Chip = Suhu Air/Ruang + Panas Tambahan
+            let targetTemp = state.ambientTemp + state.heatAdded;
+
+            // Smooth transition for simulation
+            state.avgTemp += (targetTemp - state.avgTemp) * 0.1;
+
+            if (state.avgTemp >= 85) {
+                state.isThrottling = true;
+                document.getElementById('throttle-alert').classList.remove('hidden');
+            } else {
+                state.isThrottling = false;
+                document.getElementById('throttle-alert').classList.add('hidden');
+            }
+
+            // Update Dynamic Die Materials & Heat Lights in 3D
+            const tempRatio = Math.min(Math.max((state.avgTemp - 30) / 60, 0), 1);
+            let heatColor = new THREE.Color();
+            
+            if (tempRatio < 0.5) {
+                heatColor.lerpColors(new THREE.Color(0x00f0ff), new THREE.Color(0xffe600), tempRatio * 2);
+            } else {
+                heatColor.lerpColors(new THREE.Color(0xffe600), new THREE.Color(0xff007f), (tempRatio - 0.5) * 2);
+            }
+
+            dieMaterials.forEach(mat => {
+                mat.emissive.copy(heatColor);
+                mat.emissiveIntensity = 0.4 + tempRatio * 1.2;
+            });
+
+            chipHeatLights.forEach(light => {
+                light.color.copy(heatColor);
+                light.intensity = 1.5 + tempRatio * 2.5;
+            });
+
+            // Metrics UI Update
+            const tempEl = document.getElementById('metric-temp');
+            tempEl.innerText = `${state.avgTemp.toFixed(1)} °C`;
+            if (state.avgTemp < 65) {
+                tempEl.className = "text-2xl sm:text-3xl font-mono font-extrabold text-street-lime text-glow-lime";
+            } else if (state.avgTemp < 85) {
+                tempEl.className = "text-2xl sm:text-3xl font-mono font-extrabold text-street-yellow";
+            } else {
+                tempEl.className = "text-2xl sm:text-3xl font-mono font-extrabold text-street-pink text-glow-pink animate-bounce";
+            }
+
+            document.getElementById('metric-factor').innerText = state.effectiveFactor.toFixed(3);
+            document.getElementById('metric-heat-added').innerText = `+${state.heatAdded.toFixed(1)} °C`;
+
+            const statusText = document.getElementById('metric-status');
+            if (state.isThrottling) {
+                statusText.innerText = "OVERHEAT DANGER!";
+                statusText.className = "text-xl sm:text-2xl font-bangers text-street-pink text-glow-pink animate-pulse";
+            } else if (state.avgTemp > 65) {
+                statusText.innerText = "HANGAT";
+                statusText.className = "text-xl sm:text-2xl font-bangers text-street-yellow";
+            } else {
+                statusText.innerText = "OPTIMAL & ADEM";
+                statusText.className = "text-xl sm:text-2xl font-bangers text-street-lime text-glow-lime";
+            }
+
+            // Live Math Steps Text Update
+            document.getElementById('live-step-1').innerText = `${state.workloadTDP} W × ${state.effectiveFactor.toFixed(3)} = +${state.heatAdded.toFixed(1)} °C`;
+            document.getElementById('live-step-2').innerText = `${state.ambientTemp} °C + ${state.heatAdded.toFixed(1)} °C = ${state.avgTemp.toFixed(1)} °C`;
+        }
+
+        /* --- Realtime Temperature Chart --- */
+        function renderChart() {
+            const chartCanvas = document.getElementById('chartCanvas');
+            if (!chartCanvas || !chartCanvas.width) return;
+            const chartCtx = chartCanvas.getContext('2d');
+
+            const cw = chartCanvas.width;
+            const ch = chartCanvas.height;
+
+            const isDark = state.theme === 'dark';
+            chartCtx.fillStyle = isDark ? '#08070c' : '#f8fafc';
+            chartCtx.fillRect(0, 0, cw, ch);
+
+            const dangerY = ch - ((85 - 20) / (100 - 20)) * ch;
+            chartCtx.strokeStyle = '#ff007f';
+            chartCtx.lineWidth = 2;
+            chartCtx.setLineDash([6, 4]);
+            chartCtx.beginPath();
+            chartCtx.moveTo(0, dangerY);
+            chartCtx.lineTo(cw, dangerY);
+            chartCtx.stroke();
+            chartCtx.setLineDash([]);
+
+            chartCtx.strokeStyle = state.avgTemp >= 85 ? '#ff007f' : '#39ff14';
+            chartCtx.lineWidth = 3;
+            chartCtx.beginPath();
+
+            const stepX = cw / (tempHistory.length - 1);
+            for (let i = 0; i < tempHistory.length; i++) {
+                const val = tempHistory[i];
+                const y = ch - ((val - 20) / (100 - 20)) * ch;
+                const x = i * stepX;
+
+                if (i === 0) chartCtx.moveTo(x, y);
+                else chartCtx.lineTo(x, y);
+            }
+            chartCtx.stroke();
+        }
+
+        setInterval(() => {
+            tempHistory.shift();
+            tempHistory.push(state.avgTemp);
+        }, 1000);
+
+        /* --- Navigation & Missions --- */
+        function switchTab(tabId) {
+            const tabs = ['sim', 'edu', 'mission', 'quiz'];
+            tabs.forEach(t => {
+                const sec = document.getElementById(`sec-${t}`);
+                const btn = document.getElementById(`tab-${t}-btn`);
+                if (t === tabId) {
+                    sec.classList.remove('hidden');
+                    if (t === 'sim') btn.className = "px-3 sm:px-4 py-2 bg-street-pink text-black border-2 border-black shadow-street-cyan sticker-rotate-left font-bold transition flex items-center space-x-1.5";
+                    else if (t === 'edu') btn.className = "px-3 sm:px-4 py-2 bg-street-cyan text-black border-2 border-black shadow-street-pink sticker-rotate-right font-bold transition flex items-center space-x-1.5";
+                    else if (t === 'mission') btn.className = "px-3 sm:px-4 py-2 bg-street-yellow text-black border-2 border-black shadow-street-lime sticker-rotate-left font-bold transition flex items-center space-x-1.5";
+                    else if (t === 'quiz') btn.className = "px-3 sm:px-4 py-2 bg-street-lime text-black border-2 border-black shadow-street-yellow sticker-rotate-right font-bold transition flex items-center space-x-1.5";
+                } else {
+                    sec.classList.add('hidden');
+                    btn.className = "px-3 sm:px-4 py-2 bg-street-card text-gray-300 border-2 border-street-border hover:border-white font-bold transition flex items-center space-x-1.5";
+                }
+            });
+
+            if (tabId === 'sim') {
+                setTimeout(onWindowResize, 50);
+            }
+        }
+
+        function startMission(id) {
+            state.activeMission = id;
+            state.missionTimer = 0;
+
+            const box = document.getElementById('active-mission-box');
+            box.classList.remove('hidden');
+
+            const title = document.getElementById('active-mission-title');
+            const desc = document.getElementById('active-mission-desc');
+
+            if (id === 1) {
+                title.innerText = "MISI 1 AKTIF: LLM TRAINING OVERCLOCK";
+                desc.innerText = "Daya 1000W! Gunakan Liquid/Rendam agar suhu chip < 80°C!";
+                document.getElementById('slide-workload').value = 1000;
+                updateThermalControls();
+            } else if (id === 2) {
+                title.innerText = "MISI 2 AKTIF: SUPER DINGIN DENGAN RENDAM";
+                desc.innerText = "Pilih RENDAM pada daya 600W untuk capai suhu chip < 45°C!";
+                document.getElementById('slide-workload').value = 600;
+                updateThermalControls();
+            } else if (id === 3) {
+                title.innerText = "MISI 3 AKTIF: GELOMBANG PANAS 35°C";
+                desc.innerText = "Suhu air 35°C & Daya 800W. Cegah overheat agar chip < 82°C!";
+                document.getElementById('slide-ambient').value = 35;
+                document.getElementById('slide-workload').value = 800;
+                updateThermalControls();
+            }
+
+            switchTab('sim');
+        }
+
+        function cancelMission() {
+            state.activeMission = null;
+            state.missionTimer = 0;
+            document.getElementById('active-mission-box').classList.add('hidden');
+        }
+
+        function checkMissionProgress() {
+            if (!state.activeMission) return;
+
+            let conditionMet = false;
+
+            if (state.activeMission === 1) {
+                if (state.workloadTDP >= 950 && (state.coolingTech === 'd2c' || state.coolingTech === 'immersion') && state.avgTemp < 80) conditionMet = true;
+            } else if (state.activeMission === 2) {
+                if (state.coolingTech === 'immersion' && state.avgTemp < 45) conditionMet = true;
+            } else if (state.activeMission === 3) {
+                if (state.ambientTemp >= 34 && state.workloadTDP >= 800 && state.avgTemp < 82) conditionMet = true;
+            }
+
+            if (conditionMet) {
+                state.missionTimer += 0.1;
+                document.getElementById(`m${state.activeMission}-timer`).innerText = `${state.missionTimer.toFixed(1)}s / 10s`;
+
+                if (state.missionTimer >= 10) {
+                    state.completedMissions[state.activeMission] = true;
+                    alert(`🎉 LUAR BIASA! Misi ${state.activeMission} Berhasil Diselesaikan!`);
+                    
+                    document.getElementById(`m${state.activeMission}-btn`).innerText = "✔ TERSELESAIKAN";
+                    document.getElementById(`m${state.activeMission}-btn`).className = "w-full py-2.5 bg-street-lime text-black font-bangers text-lg border-2 border-black cursor-default";
+
+                    updateStarCount();
+                    cancelMission();
+                }
+            } else {
+                state.missionTimer = 0;
+                document.getElementById(`m${state.activeMission}-timer`).innerText = `0.0s / 10s`;
+            }
+        }
+
+        function updateStarCount() {
+            let stars = 0;
+            if (state.completedMissions[1]) stars++;
+            if (state.completedMissions[2]) stars++;
+            if (state.completedMissions[3]) stars++;
+
+            document.getElementById('star-count-text').innerText = `${stars} / 3 BINTANG`;
+        }
+
+        /* --- Quiz Engine --- */
+        function submitQuiz() {
+            const answers = { q1: 'a', q2: 'a', q3: 'a', q4: 'a', q5: 'a', q6: 'a' };
+            let score = 0;
+
+            for (let i = 1; i <= 6; i++) {
+                const selected = document.querySelector(`input[name="q${i}"]:checked`)?.value;
+                if (selected === answers[`q${i}`]) score++;
+            }
+
+            document.getElementById('quiz-score-badge').innerText = `SKOR: ${score}/6`;
+
+            const box = document.getElementById('quiz-result-box');
+            const title = document.getElementById('quiz-result-title');
+            const desc = document.getElementById('quiz-result-desc');
+
+            box.classList.remove('hidden');
+
+            if (score === 6) {
+                title.innerText = "SEMPURNA! SKOR 100% 🔥";
+                title.className = "text-2xl font-bangers text-street-lime tracking-wider";
+                desc.innerText = "Luar biasa! Anda menguasai rumus simpel 2-langkah pendinginan chip AI dengan sangat baik!";
+            } else if (score >= 4) {
+                title.innerText = "SANGAT BAGUS! ⚡";
+                title.className = "text-2xl font-bangers text-street-yellow tracking-wider";
+                desc.innerText = `Anda menjawab ${score} dari 6 soal dengan benar. Baca modul edukasi sebentar lagi untuk mencapai 100%!`;
+            } else {
+                title.innerText = "PERLU EVALUASI ULANG 💀";
+                title.className = "text-2xl font-bangers text-street-pink tracking-wider";
+                desc.innerText = `Anda menjawab ${score} dari 6 soal. Pelajari kembali materi rumus gampang dan coba lagi.`;
+            }
+        }
+
+        function resetQuiz() {
+            document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+            document.getElementById('quiz-result-box').classList.add('hidden');
+            document.getElementById('quiz-score-badge').innerText = "SKOR: 0/6";
+        }
+
+        /* --- Main Animation Loop --- */
+        function animate() {
+            requestAnimationFrame(animate);
+
+            calculateThermalPhysics();
+
+            if (state.viewMode === '3d') {
+                controls.update();
+                applyExplodedViewOffsets();
+                updateParticleSystems();
+                updateFloatingLabels();
+                renderer.render(scene, camera);
+            } else {
+                draw2DSchematic();
+            }
+
+            renderChart();
+            checkMissionProgress();
+        }
+
+        window.onload = function() {
+            initThreeJS();
+            renderMathFormulas();
+            animate();
+        };
+    </script>
+</body>
+</html>
